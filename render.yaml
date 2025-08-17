@@ -1,0 +1,13 @@
+﻿services:
+  - type: web
+    name: evolaine-backend
+    env: node
+    buildCommand: cd server && npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3003
+      - key: JWT_SECRET
+        generateValue: true
