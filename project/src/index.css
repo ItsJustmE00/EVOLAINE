@@ -1,0 +1,62 @@
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Playpen+Sans+Arabic:wght@400;500;600;700&display=swap');
+
+/* stylelint-disable */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+/* stylelint-enable */
+
+/* Styles de base pour le mode RTL */
+[dir='rtl'] {
+  font-family: 'Playpen Sans Arabic', 'Tajawal', sans-serif;
+}
+
+/* Apply RTL font to all elements in RTL mode */
+[dir='rtl'] * {
+  font-family: 'Playpen Sans Arabic', 'Tajawal', sans-serif;
+}
+
+/* Correction des marges et paddings pour RTL */
+[dir="rtl"] .rtl\:space-x-reverse > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-x-reverse: 1;
+}
+
+/* Correction des marges négatives pour RTL */
+[dir="rtl"] .rtl\:-ml-4 {
+  margin-right: -1rem;
+  margin-left: 0;
+}
+
+/* Correction pour les icônes dans les boutons RTL */
+[dir="rtl"] .rtl\:rotate-180 {
+  transform: rotate(180deg);
+}
+
+/* Correction pour les éléments flottants en RTL */
+[dir="rtl"] .rtl\:float-right {
+  float: left;
+}
+
+[dir="rtl"] .rtl\:float-left {
+  float: right;
+}
+
+/* Correction pour les marges automatiques en RTL */
+[dir="rtl"] .rtl\:ml-auto {
+  margin-right: auto;
+  margin-left: 0;
+}
+
+[dir="rtl"] .rtl\:mr-auto {
+  margin-left: auto;
+  margin-right: 0;
+}
+
+/* Correction pour les positions de texte en RTL */
+[dir="rtl"] .rtl\:text-right {
+  text-align: right;
+}
+
+[dir="rtl"] .rtl\:text-left {
+  text-align: left;
+}

@@ -1,0 +1,96 @@
+{
+  "about_section": {
+    "title": "Prenez soin de votre intimité",
+    "subtitle": "avec l'attention qu'elle mérite",
+    "description1": "Des formules douces conçues pour nettoyer, apaiser et mettre en valeur la beauté naturelle de votre zone intime.",
+    "description2": " Chaque toucher est une promesse de confort, de fraîcheur et de bien-être profond.",
+    "description3": "Chaque produit EvoLaine est une invitation au voyage, une promesse de beauté authentique qui révèle l'éclat naturel de votre peau.",
+    "features": {
+      "natural": {
+        "title": "100% Naturel",
+        "description": "Ingrédients biologiques"
+      },
+      "certified": {
+        "title": "Certifié",
+        "description": "Haute qualité"
+      },
+      "clients": {
+        "title": "+10 000",
+        "description": "Clientes satisfaites"
+      },
+      "shipping": {
+        "title": "Maroc",
+        "description": "Livraison dans tout le Royaume"
+      }
+    }
+  },
+  "common": {
+    "change_language": "Changer de langue"
+  },
+  "testimonials": {
+    "title": "Avis clients",
+    "subtitle": "Découvrez ce que pensent nos clients de nos produits {{brand}}",
+    "items": [
+      {
+        "name": "Amina El Fassi",
+        "city": "Casablanca",
+        "comment": "Les produits EvoLaine ont révolutionné ma routine d'hygiène intime. Une douceur incomparable !"
+      },
+      {
+        "name": "Youssef Benali",
+        "city": "Rabat",
+        "comment": "Service client exceptionnel et produits de grande qualité. Je recommande vivement !"
+      },
+      {
+        "name": "Nadia El Amrani",
+        "city": "Marrakech",
+        "comment": "La crème hydratante est exceptionnelle. Ma peau est douce et protégée toute la journée."
+      }
+    ]
+  },
+  "contact": {
+    "phone": {
+      "title": "Téléphone",
+      "number": "06 59 55 37 41"
+    }
+  },
+  "products": {
+    "title": "Nos Produits",
+    "subtitle": "Découvrez notre collection exclusive de soins",
+    "shipping": "Livraison gratuite"
+  },
+  "cart": {
+    "title": "Votre Panier",
+    "summary": "Récapitulatif de la commande",
+    "subtotal": "Sous-total",
+    "total": "Total",
+    "item": "article",
+    "items": "articles",
+    "empty": {
+      "title": "Votre panier est vide",
+      "message": "Parcourez nos produits et ajoutez des articles à votre panier.",
+      "browseProducts": "Voir les produits"
+    },
+    "form": {
+      "title": "Détails de livraison",
+      "firstName": "Prénom",
+      "lastName": "Nom",
+      "phone": "Téléphone",
+      "address": "Adresse de livraison",
+      "city": "Ville",
+      "notes": "Notes supplémentaires (optionnel)",
+      "submit": "Confirmer la commande",
+      "required": "Champs obligatoires",
+      "cancel": "Annuler",
+      "success": {
+        "title": "Commande passée avec succès !",
+        "message": "Merci pour votre commande. Nous vous contacterons bientôt pour confirmer les détails.",
+        "continue": "Continuer mes achats"
+      },
+      "error": {
+        "title": "Erreur",
+        "message": "Une erreur est survenue lors du traitement de votre commande. Veuillez réessayer."
+      }
+    }
+  }
+}
