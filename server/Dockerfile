@@ -26,6 +26,12 @@ WORKDIR /app
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/server.js .
+COPY --from=builder /app/db.js .
+COPY --from=builder /app/admin ./admin
+COPY --from=builder /app/.env ./
+
+# Créer un dossier pour les logs
+RUN mkdir -p logs
 
 # Exposer le port
 EXPOSE 3004
