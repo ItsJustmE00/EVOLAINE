@@ -54,37 +54,115 @@ const PORT = process.env.PORT || 3004;
 // Création du serveur HTTP
 const server = http.createServer(app);
 
+// Configuration des origines autorisées (déplacée en haut du fichier si elle existe déjà plus bas)
+if (typeof allowedOrigins === 'undefined') {
+  var allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:3004',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3004',
+    'https://evolaine-backend.onrender.com',
+    'https://www.evolaine.com',
+    'https://evolaine.com'
+  ].filter(Boolean);
+}
+
+// Configuration CORS pour Express (uniquement si non déjà configuré)
+if (typeof corsOptions === 'undefined') {
+  console.log('Configuration CORS...');
+  var corsOptions = {
+    origin: function (origin, callback) {
+      // Autoriser les requêtes sans origine (comme les applications mobiles ou Postman)
+      if (!origin) return callback(null, true);
+      
+      // En développement, autoriser toutes les origines
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('Mode développement: origine autorisée:', origin);
+        return callback(null, true);
+      }
+      
+      // Vérifier si l'origine est autorisée
+      if (allowedOrigins.some(allowedOrigin => 
+        origin === allowedOrigin || 
+        origin.startsWith(allowedOrigin.replace(/https?:\/\//, 'http://'))
+      )) {
+        console.log('Origine autorisée:', origin);
+        return callback(null, true);
+      }
+      
+      console.warn('Tentative de connexion non autorisée depuis l\'origine:', origin);
+      return callback(new Error('Not allowed by CORS'));
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-access-token', 'Accept', 'X-Requested-With'],
+    credentials: true,
+    exposedHeaders: ['Content-Range', 'X-Content-Range']
+  };
+  
+  // Application du middleware CORS
+  app.use(cors(corsOptions));
+}
+
 // Configuration de Socket.IO
 console.log('Configuration de Socket.IO...');
 const io = new Server(server, {
   cors: {
     origin: function(origin, callback) {
-      console.log('Vérification CORS WebSocket pour l\'origine:', origin);
-      // En développement, autoriser toutes les origines
+      // En développement, tout autoriser
       if (process.env.NODE_ENV !== 'production') {
-        console.log('Mode développement: origine WebSocket autorisée');
         return callback(null, true);
       }
       
-      // En production, vérifier l'origine
-      if (!origin || allowedOrigins.includes(origin)) {
-        console.log('Origine WebSocket autorisée:', origin);
-        return callback(null, true);
-      } else {
-        console.warn('Tentative de connexion WebSocket non autorisée depuis l\'origine:', origin);
-        return callback(new Error('Not allowed by CORS'));
-      }
+      // Vérifier si l'origine est dans la liste autorisée
+      const originIsAllowed = allowedOrigins.some(allowedOrigin => {
+        if (allowedOrigin.includes('*')) {
+          const regex = new RegExp('^' + allowedOrigin.replace(/\*/g, '.*') + '$');
+          return regex.test(origin);
+        }
+        return allowedOrigin === origin || origin.endsWith(new URL(allowedOrigin).hostname);
+      });
+      
+      callback(null, originIsAllowed);
     },
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-access-token'],
-    credentials: true
+    methods: ['GET', 'POST'],
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization']
   },
-  path: '/socket.io/',
-  // Désactiver le moteur de socket.io pour forcer l'utilisation de WebSocket
-  // Cela peut aider à résoudre certains problèmes de connexion
-  // transports: ['websocket'],
+  path: '/socket.io',
+  transports: ['websocket', 'polling'],
+  allowEIO3: true,
+  pingTimeout: 60000,
+  pingInterval: 25000,
+  cookie: false,
   // Activer le débogage détaillé
-  // debug: true
+  debug: process.env.NODE_ENV !== 'production',
+  // Désactiver la vérification du certificat en développement
+  rejectUnauthorized: process.env.NODE_ENV === 'production',
+  // Forcer le protocole WebSocket
+  allowUpgrades: true,
+  perMessageDeflate: {
+    threshold: 1024, // Seuil de compression en octets
+    zlibDeflateOptions: {
+      chunkSize: 16 * 1024
+    },
+    zlibInflateOptions: {
+      chunkSize: 16 * 1024
+    }
+  },
+  upgrade: true,
+  // Configuration supplémentaire pour la stabilité
+  maxHttpBufferSize: 1e8, // 100MB
+  serveClient: false,
+  // Désactiver les fonctionnalités inutiles
+  httpCompression: true,
+  // Configuration du moteur de transport
+  allowUpgrades: true,
+  perMessageDeflate: {
+    threshold: 1024, // Seuil pour la compression
+    zlibDeflateOptions: {
+      chunkSize: 16 * 1024
+    }
+  }
 });
 
 // Gestion des connexions Socket.IO
@@ -191,8 +269,19 @@ const allowedOrigins = [
   'http://192.168.3.11:3004',
   'https://evolaine.onrender.com',
   'https://www.evolaine.com',
-  'https://evolaine.com'
+  'https://evolaine.com',
+  'https://evolaine-backend.onrender.com',
+  'https://evolaine-frontend.onrender.com',
+  'https://evolaine-admin.onrender.com',
+  'http://localhost:3000/admin',
+  'http://localhost:3004/admin'
 ];
+
+// Ajouter l'origine du frontend si elle n'est pas déjà présente
+const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+if (!allowedOrigins.includes(frontendUrl)) {
+  allowedOrigins.push(frontendUrl);
+}
 
 console.log('✅ Origines autorisées:', allowedOrigins);
 
@@ -234,52 +323,131 @@ app.use((req, res, next) => {
   next();
 });
 
-// Configuration CORS simplifiée pour le développement
+// Configuration CORS pour la production et le développement
+const allowedOrigins = [
+    'https://evolaine-backend.onrender.com',
+  'https://evolaine.onrender.com',
+  'https://www.evolaine.com',
+  'https://evolaine.com'
+];
+
 const corsOptions = {
   origin: function (origin, callback) {
     console.log('Vérification CORS pour l\'origine:', origin);
     
-    // En développement, autoriser toutes les origines
+    // En développement, autoriser toutes les origines avec des avertissements
     if (process.env.NODE_ENV !== 'production') {
       console.log('Mode développement: toutes les origines sont autorisées');
       return callback(null, true);
     }
     
-    // En production, vérifier l'origine
-    if (!origin || allowedOrigins.includes(origin)) {
+    // En production, vérifier l'origine de manière stricte
+    if (!origin) {
+      // Autoriser les requêtes sans origine (comme les applications mobiles ou Postman)
+      console.log('Requête sans origine détectée (peut être une application mobile ou Postman)');
+      return callback(null, true);
+    }
+    
+    // Vérifier si l'origine est autorisée
+    const originIsAllowed = allowedOrigins.some(allowedOrigin => {
+      // Vérification flexible pour les sous-domaines
+      if (allowedOrigin.includes('*')) {
+        const regex = new RegExp('^' + allowedOrigin.replace(/\*/g, '.*') + '$');
+        return regex.test(origin);
+      }
+      return allowedOrigin === origin || origin.endsWith(new URL(allowedOrigin).hostname);
+    });
+    
+    if (originIsAllowed) {
       console.log('Origine autorisée:', origin);
       return callback(null, true);
     } else {
       console.warn('Tentative d\'accès non autorisée depuis l\'origine:', origin);
-      return callback(new Error('Not allowed by CORS'));
+      console.log('Origines autorisées:', allowedOrigins);
+      return callback(new Error(`Origine non autorisée par CORS: ${origin}`));
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-access-token', 'Accept'],
-  exposedHeaders: ['Content-Range', 'X-Content-Range'],
-  maxAge: 600 // Mettre en cache les pré-vérifications CORS pendant 10 minutes
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'x-access-token', 
+    'Accept',
+    'X-Requested-With',
+    'X-Forwarded-For',
+    'X-Forwarded-Proto',
+    'X-Forwarded-Host',
+    'Cache-Control',
+    'Pragma',
+    'Expires',
+    'Upgrade',
+    'Connection'
+  ],
+  exposedHeaders: [
+    'Content-Range', 
+    'X-Content-Range',
+    'X-Total-Count',
+    'Link',
+    'Set-Cookie',
+    'Access-Control-Allow-Origin'
+  ],
+  maxAge: 600, // Mettre en cache les pré-vérifications CORS pendant 10 minutes
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 };
 
-// Appliquer le middleware CORS
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Activer les requêtes OPTIONS (pré-vol)
-
+// Configuration CORS pour les requêtes régulières
 console.log('🔧 Application de la configuration CORS...');
-try {
-  // Appliquer CORS avec les options
-  app.use(cors(corsOptions));
-  console.log('✅ CORS configuré avec succès');
-  
-  // Gestion des requêtes OPTIONS (pré-vol)
-  app.options('*', cors(corsOptions));
-  console.log('✅ Gestion des requêtes OPTIONS configurée');
-} catch (err) {
-  console.error('❌ Erreur lors de la configuration CORS:', err);
-  process.exit(1);
-}
+app.use(cors(corsOptions));
+console.log('✅ CORS configuré avec succès');
 
-// Configuration CORS simplifiée pour le développement
+// Gestion des requêtes OPTIONS (pré-vol) avec en-têtes dynamiques
+app.options('*', (req, res) => {
+  const origin = req.headers.origin || '*';
+  const reqHeaders = req.headers['access-control-request-headers'];
+  const allowHeaders = reqHeaders || [
+    'Content-Type',
+    'Authorization',
+    'x-access-token',
+    'Accept',
+    'X-Requested-With',
+    'X-Forwarded-For',
+    'X-Forwarded-Proto',
+    'X-Forwarded-Host',
+    'Cache-Control',
+    'cache-control',
+    'Pragma',
+    'Expires'
+  ].join(', ');
+
+  res.header('Access-Control-Allow-Origin', origin);
+  res.header('Vary', 'Origin');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH');
+  res.header('Access-Control-Allow-Headers', allowHeaders);
+  return res.sendStatus(204);
+});
+console.log('✅ Gestion des requêtes OPTIONS configurée (dynamique)');
+
+// Middleware pour gérer les erreurs CORS
+app.use((err, req, res, next) => {
+  if (err) {
+    console.error('❌ Erreur CORS:', err.message);
+    
+    // Si c'est une erreur CORS, renvoyer une réponse d'erreur appropriée
+    if (err.name === 'CorsError' || err.message.includes('CORS')) {
+      return res.status(403).json({
+        error: 'Accès non autorisé',
+        message: 'Cette origine n\'est pas autorisée à accéder à cette ressource',
+        details: process.env.NODE_ENV === 'development' ? err.message : undefined
+      });
+    }
+  }
+  
+  // Passer à l'erreur suivante si ce n'est pas une erreur CORS
+  next(err);
+});
 
 // Middleware pour parser le JSON
 app.use(express.json({ limit: '10mb' }));
@@ -362,8 +530,34 @@ app.use((req, res, next) => {
   next();
 });
 
-// Servir les fichiers statiques de l'administration
-app.use(express.static(path.join(__dirname, 'admin')));
+// Middleware pour contrôler le cache des fichiers admin
+app.use('/admin', (req, res, next) => {
+  if (req.url.endsWith('.js') || req.url.endsWith('.css') || req.url.endsWith('.html')) {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    res.set('Surrogate-Control', 'no-store');
+  }
+  next();
+});
+
+// Servir les fichiers statiques de l'administration (avant l'authentification)
+app.use('/admin', express.static(path.join(__dirname, 'admin'), {
+  etag: false, // Désactiver le cache côté serveur
+  lastModified: false
+}));
+
+// Route pour servir l'index.html de l'admin pour toutes les routes /admin
+app.get('/admin*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin', 'index.html'), {
+    headers: {
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'Surrogate-Control': 'no-store'
+    }
+  });
+});
 
 // Servir les fichiers statiques du dossier public du frontend
 app.use(express.static(path.join(__dirname, '..', 'project', 'public')));
