@@ -34,86 +34,111 @@ if (config.NODE_ENV === 'production') {
 }
 
 console.log('Configuration chargée avec succès:', {
-  NODE_ENV: process.env.NODE_ENV,
-  PORT: process.env.PORT,
-  DB_HOST: process.env.DB_HOST,
-  DB_NAME: process.env.DB_NAME,
-  DB_USER: process.env.DB_USER,
-  JWT_SECRET: process.env.JWT_SECRET ? 'Défini' : 'Non défini',
-  ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS || 'Non défini'
+  NODE_ENV: config.NODE_ENV,
+  PORT: config.PORT,
+  DB_HOST: config.DB_HOST,
+  DB_NAME: config.DB_NAME,
+  DB_USER: config.DB_USER,
+  JWT_SECRET: config.JWT_SECRET ? 'Défini' : 'Non défini'
 });
-
-// Clé secrète pour les tokens JWT
-const JWT_SECRET = process.env.JWT_SECRET || 'votre_cle_secrete_tres_longue_et_securisee';
 
 // Création de l'application Express
 console.log('Création de l\'application Express...');
 const app = express();
-const PORT = process.env.PORT || 3004;
+const PORT = config.PORT;
 
 // Création du serveur HTTP
 const server = http.createServer(app);
 
-// Configuration des origines autorisées (déplacée en haut du fichier si elle existe déjà plus bas)
-if (typeof allowedOrigins === 'undefined') {
-  var allowedOrigins = [
-    'http://localhost:3000',
-    'http://localhost:3004',
-    'http://127.0.0.1:3000',
-    'http://127.0.0.1:3004',
-    'https://evolaine-backend.onrender.com',
-    'https://www.evolaine.com',
-    'https://evolaine.com'
-  ].filter(Boolean);
+// Configuration CORS
+console.log('🔧 Configuration CORS...');
+
+// Liste des origines autorisées
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3003',
+  'http://localhost:3004',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3003',
+  'http://127.0.0.1:3004',
+  'https://evolaine-backend.onrender.com',
+  'https://evolaine.onrender.com',
+  'https://www.evolaine.com',
+  'https://evolaine.com',
+  'https://evolaine-frontend.onrender.com',
+  'https://evolaine-admin.onrender.com'
+];
+
+// Ajouter l'origine du frontend si elle n'est pas déjà présente
+const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+if (frontendUrl && !allowedOrigins.includes(frontendUrl)) {
+  allowedOrigins.push(frontendUrl);
 }
 
-// Configuration CORS pour Express (uniquement si non déjà configuré)
-if (typeof corsOptions === 'undefined') {
-  console.log('Configuration CORS...');
-  var corsOptions = {
-    origin: function (origin, callback) {
-      // Autoriser les requêtes sans origine (comme les applications mobiles ou Postman)
-      if (!origin) return callback(null, true);
-      
-      // En développement, autoriser toutes les origines
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('Mode développement: origine autorisée:', origin);
-        return callback(null, true);
+console.log('✅ Origines autorisées:', allowedOrigins);
+
+// Configuration des options CORS
+const corsOptions = {
+  origin: function (origin, callback) {
+    // En développement, autoriser toutes les origines avec des avertissements
+    if (process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
+    
+    // En production, vérifier l'origine de manière stricte
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    // Vérifier si l'origine est autorisée
+    const originIsAllowed = allowedOrigins.some(allowedOrigin => {
+      if (allowedOrigin.includes('*')) {
+        const regex = new RegExp('^' + allowedOrigin.replace(/\*/g, '.*') + '$');
+        return regex.test(origin);
       }
-      
-      // Vérifier si l'origine est autorisée
-      if (allowedOrigins.some(allowedOrigin => 
-        origin === allowedOrigin || 
-        origin.startsWith(allowedOrigin.replace(/https?:\/\//, 'http://'))
-      )) {
-        console.log('Origine autorisée:', origin);
-        return callback(null, true);
-      }
-      
-      console.warn('Tentative de connexion non autorisée depuis l\'origine:', origin);
-      return callback(new Error('Not allowed by CORS'));
-    },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-access-token', 'Accept', 'X-Requested-With'],
-    credentials: true,
-    exposedHeaders: ['Content-Range', 'X-Content-Range']
-  };
-  
-  // Application du middleware CORS
-  app.use(cors(corsOptions));
-}
+      return allowedOrigin === origin || origin.endsWith(new URL(allowedOrigin).hostname);
+    });
+    
+    if (originIsAllowed) {
+      return callback(null, true);
+    } else {
+      console.warn('Tentative d\'accès non autorisée depuis l\'origine:', origin);
+      return callback(new Error('Accès non autorisé par CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'x-access-token',
+    'Accept',
+    'X-Requested-With'
+  ],
+  exposedHeaders: [
+    'Content-Range',
+    'X-Content-Range'
+  ]
+};
+
+// Configuration CORS pour les requêtes régulières
+console.log('🔧 Application de la configuration CORS...');
+app.use(cors(corsOptions));
 
 // Configuration de Socket.IO
-console.log('Configuration de Socket.IO...');
+console.log('🔌 Configuration de Socket.IO...');
 const io = new Server(server, {
   cors: {
-    origin: function(origin, callback) {
-      // En développement, tout autoriser
+    origin: function (origin, callback) {
+      // Utiliser la même logique de vérification d'origine que pour CORS
       if (process.env.NODE_ENV !== 'production') {
         return callback(null, true);
       }
       
-      // Vérifier si l'origine est dans la liste autorisée
+      if (!origin) {
+        return callback(null, true);
+      }
+      
       const originIsAllowed = allowedOrigins.some(allowedOrigin => {
         if (allowedOrigin.includes('*')) {
           const regex = new RegExp('^' + allowedOrigin.replace(/\*/g, '.*') + '$');
@@ -122,11 +147,16 @@ const io = new Server(server, {
         return allowedOrigin === origin || origin.endsWith(new URL(allowedOrigin).hostname);
       });
       
-      callback(null, originIsAllowed);
+      if (originIsAllowed) {
+        return callback(null, true);
+      } else {
+        console.warn('Tentative de connexion WebSocket non autorisée depuis l\'origine:', origin);
+        return callback(new Error('Accès non autorisé par CORS'));
+      }
     },
     methods: ['GET', 'POST'],
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-access-token']
   },
   path: '/socket.io',
   transports: ['websocket', 'polling'],
@@ -134,14 +164,11 @@ const io = new Server(server, {
   pingTimeout: 60000,
   pingInterval: 25000,
   cookie: false,
-  // Activer le débogage détaillé
   debug: process.env.NODE_ENV !== 'production',
-  // Désactiver la vérification du certificat en développement
   rejectUnauthorized: process.env.NODE_ENV === 'production',
-  // Forcer le protocole WebSocket
   allowUpgrades: true,
   perMessageDeflate: {
-    threshold: 1024, // Seuil de compression en octets
+    threshold: 1024,
     zlibDeflateOptions: {
       chunkSize: 16 * 1024
     },
@@ -149,20 +176,9 @@ const io = new Server(server, {
       chunkSize: 16 * 1024
     }
   },
-  upgrade: true,
-  // Configuration supplémentaire pour la stabilité
   maxHttpBufferSize: 1e8, // 100MB
   serveClient: false,
-  // Désactiver les fonctionnalités inutiles
-  httpCompression: true,
-  // Configuration du moteur de transport
-  allowUpgrades: true,
-  perMessageDeflate: {
-    threshold: 1024, // Seuil pour la compression
-    zlibDeflateOptions: {
-      chunkSize: 16 * 1024
-    }
-  }
+  httpCompression: true
 });
 
 // Gestion des connexions Socket.IO
@@ -252,154 +268,6 @@ function verifyAdminToken(token) {
   }
 }
 
-// Configuration CORS
-console.log('🔧 Configuration CORS...');
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:3003',
-  'http://localhost:3004',
-  'http://127.0.0.1:3000',
-  'http://127.0.0.1:3003',
-  'http://127.0.0.1:3004',
-  'http://192.168.1.100:3000',
-  'http://192.168.1.100:3003',
-  'http://192.168.1.100:3004',
-  'http://192.168.3.11:3000',
-  'http://192.168.3.11:3003',
-  'http://192.168.3.11:3004',
-  'https://evolaine.onrender.com',
-  'https://www.evolaine.com',
-  'https://evolaine.com',
-  'https://evolaine-backend.onrender.com',
-  'https://evolaine-frontend.onrender.com',
-  'https://evolaine-admin.onrender.com',
-  'http://localhost:3000/admin',
-  'http://localhost:3004/admin'
-];
-
-// Ajouter l'origine du frontend si elle n'est pas déjà présente
-const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-if (!allowedOrigins.includes(frontendUrl)) {
-  allowedOrigins.push(frontendUrl);
-}
-
-console.log('✅ Origines autorisées:', allowedOrigins);
-
-// Middleware pour logger les requêtes entrantes
-app.use((req, res, next) => {
-  console.log(`\n=== NOUVELLE REQUÊTE ${req.method} ${req.path} ===`);
-  console.log('Origine:', req.headers.origin || 'Non spécifiée');
-  console.log('En-têtes:', req.headers);
-  
-  // Capturer le corps de la requête pour les requêtes POST/PUT
-  if (req.method === 'POST' || req.method === 'PUT') {
-    const chunks = [];
-    
-    req.on('data', (chunk) => {
-      chunks.push(chunk);
-    });
-    
-    const oldEnd = req.on;
-    req.on = function(event, callback) {
-      if (event === 'end') {
-        oldEnd.call(req, event, () => {
-          if (chunks.length > 0) {
-            const body = Buffer.concat(chunks).toString();
-            console.log('Corps de la requête (brut):', body);
-            try {
-              console.log('Corps de la requête (JSON):', JSON.parse(body));
-            } catch (e) {
-              console.log('Le corps de la requête n\'est pas du JSON valide');
-            }
-          }
-          callback();
-        });
-      } else {
-        oldEnd.call(req, event, callback);
-      }
-    };
-  }
-  
-  next();
-});
-
-// Configuration CORS pour la production et le développement
-const allowedOrigins = [
-    'https://evolaine-backend.onrender.com',
-  'https://evolaine.onrender.com',
-  'https://www.evolaine.com',
-  'https://evolaine.com'
-];
-
-const corsOptions = {
-  origin: function (origin, callback) {
-    console.log('Vérification CORS pour l\'origine:', origin);
-    
-    // En développement, autoriser toutes les origines avec des avertissements
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('Mode développement: toutes les origines sont autorisées');
-      return callback(null, true);
-    }
-    
-    // En production, vérifier l'origine de manière stricte
-    if (!origin) {
-      // Autoriser les requêtes sans origine (comme les applications mobiles ou Postman)
-      console.log('Requête sans origine détectée (peut être une application mobile ou Postman)');
-      return callback(null, true);
-    }
-    
-    // Vérifier si l'origine est autorisée
-    const originIsAllowed = allowedOrigins.some(allowedOrigin => {
-      // Vérification flexible pour les sous-domaines
-      if (allowedOrigin.includes('*')) {
-        const regex = new RegExp('^' + allowedOrigin.replace(/\*/g, '.*') + '$');
-        return regex.test(origin);
-      }
-      return allowedOrigin === origin || origin.endsWith(new URL(allowedOrigin).hostname);
-    });
-    
-    if (originIsAllowed) {
-      console.log('Origine autorisée:', origin);
-      return callback(null, true);
-    } else {
-      console.warn('Tentative d\'accès non autorisée depuis l\'origine:', origin);
-      console.log('Origines autorisées:', allowedOrigins);
-      return callback(new Error(`Origine non autorisée par CORS: ${origin}`));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: [
-    'Content-Type', 
-    'Authorization', 
-    'x-access-token', 
-    'Accept',
-    'X-Requested-With',
-    'X-Forwarded-For',
-    'X-Forwarded-Proto',
-    'X-Forwarded-Host',
-    'Cache-Control',
-    'Pragma',
-    'Expires',
-    'Upgrade',
-    'Connection'
-  ],
-  exposedHeaders: [
-    'Content-Range', 
-    'X-Content-Range',
-    'X-Total-Count',
-    'Link',
-    'Set-Cookie',
-    'Access-Control-Allow-Origin'
-  ],
-  maxAge: 600, // Mettre en cache les pré-vérifications CORS pendant 10 minutes
-  preflightContinue: false,
-  optionsSuccessStatus: 204
-};
-
-// Configuration CORS pour les requêtes régulières
-console.log('🔧 Application de la configuration CORS...');
-app.use(cors(corsOptions));
 console.log('✅ CORS configuré avec succès');
 
 // Gestion des requêtes OPTIONS (pré-vol) avec en-têtes dynamiques
