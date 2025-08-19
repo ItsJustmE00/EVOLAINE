@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+// Base URL de l'API
+const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL?.replace(/\/$/, '') || '';
 import { useCart } from '../contexts/CartContext';
 
 interface FormValues {
@@ -101,7 +103,7 @@ const CheckoutForm = () => {
     setIsSubmitting(true);
     
     try {
-      const response = await fetch('http://192.168.3.11:3003/api/orders', {
+      const response = await fetch(`${API_BASE}/api/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -116,13 +118,21 @@ const CheckoutForm = () => {
         })
       });
 
-      if (!response.ok) {
-        throw new Error('Erreur lors de la soumission de la commande');
+      let data: any = null;
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        try { data = JSON.parse(text); } catch { data = { message: text }; }
       }
 
-      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.error || data?.message || 'Erreur lors de la soumission de la commande');
+      }
+
       clearCart(); // Vider le panier après une commande réussie
-      navigate(`/confirmation/${data.id}`);
+      navigate(`/confirmation/${data.id || ''}`);
       
     } catch (error) {
       console.error('Erreur:', error);

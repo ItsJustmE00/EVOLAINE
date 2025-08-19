@@ -3,7 +3,7 @@ services:
   - type: web
     name: evolaine-backend
     env: node
-    region: frankfurt  # Choisissez la région la plus proche de vos utilisateurs
+    region: frankfurt
     buildCommand: cd server && npm ci && npm run build
     startCommand: node server.js
     envVars:
@@ -34,7 +34,28 @@ services:
           name: evolaine-db
           property: password
     healthCheckPath: /api/health
-    plan: free  # Ou 'starter' pour les environnements de production
+    plan: free
+
+  # Configuration pour le frontend
+  - type: web
+    name: evolaine-frontend
+    env: static
+    region: frankfurt
+    buildCommand: |
+      cd project && \
+      npm ci && \
+      npm run build
+    staticPublishPath: project/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: VITE_API_BASE_URL
+        value: https://evolaine-backend.onrender.com
+    plan: free
 
 # Configuration pour la base de données PostgreSQL
 databases:

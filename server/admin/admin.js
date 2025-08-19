@@ -1,44 +1,225 @@
 // Variables globales
 let currentOrderId = null;
 let currentMessageId = null;
+let allOrders = [];
+let currentFilter = 'all';
+let currentSearchTerm = '';
 
-// Configuration de l'URL de l'API
+// Configuration de débogage
+const DEBUG = true;
+
+// Fonction utilitaire pour effectuer des appels API avec gestion des erreurs
+async function apiFetch(endpoint, options = {}) {
+  const url = endpoint.startsWith('http') ? endpoint : `${API_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+  
+  console.log(`[API] ${options.method || 'GET'} ${url}`);
+  
+  const headers = {
+    'Content-Type': 'application/json',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+    ...(options.headers || {})
+  };
+
+  // Ajouter le token d'authentification s'il existe
+  const token = localStorage.getItem('adminToken');
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers,
+      credentials: 'include',
+      cache: 'no-store',
+      mode: 'cors'
+    });
+
+    // Gestion des réponses non-OK
+    if (!response.ok) {
+      let errorMessage = `Erreur HTTP ${response.status}: ${response.statusText}`;
+      
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorMessage;
+      } catch (e) {
+        // Ne rien faire si on ne peut pas parser la réponse en JSON
+      }
+      
+      const error = new Error(errorMessage);
+      error.status = response.status;
+      error.response = response;
+      throw error;
+    }
+
+    // Pour les réponses sans contenu (comme les DELETE réussis)
+    if (response.status === 204) {
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error(`[API Error] ${error.message}`, {
+      url,
+      method: options.method || 'GET',
+      status: error.status,
+      error: error.message
+    });
+    
+    // Gestion spécifique des erreurs de réseau
+    if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+      error.message = 'Impossible de se connecter au serveur. Veuillez vérifier votre connexion Internet.';
+    }
+    
+    // Afficher une notification à l'utilisateur
+    showNotification(error.message || 'Une erreur est survenue', 'error');
+    
+    // Si l'erreur est une erreur d'authentification, rediriger vers la page de connexion
+    if (error.status === 401) {
+      // Rediriger vers la page de connexion
+      window.location.href = '/admin/login';
+    }
+    
+    throw error;
+  }
+}
+
+// Forcer le mode développement local
+const isLocalhost = true; // Forcer le mode local
+console.log('Mode développement local forcé');
+
+// Configuration de l'API pour le développement local
 const API_BASE_URL = 'http://localhost:3004';
-const API_URL = API_BASE_URL; // La base de l'URL, car les routes commencent déjà par /api
+const API_URL = API_BASE_URL;
 
-// Configuration de Socket.IO
-console.log('Initialisation de la connexion Socket.IO...');
+// Configuration WebSocket pour le développement local
+const WS_PROTOCOL = 'ws:';
+const WS_HOST = 'localhost:3004';
+const WS_URL = `${WS_PROTOCOL}//${WS_HOST}`;
 
-// Désactiver le cache pour les requêtes de développement
-console.log('Mode développement: désactivation du cache pour les requêtes');
-fetch('/cache-bust', { headers: { 'Cache-Control': 'no-cache' } });
+console.log('Configuration API:', API_URL);
+console.log('Configuration WebSocket:', WS_URL);
 
-// Configuration de la connexion Socket.IO
-const socketOptions = {
+// Configuration des paramètres WebSocket
+const WS_CONFIG = {
   path: '/socket.io/',
   transports: ['websocket', 'polling'],
   autoConnect: true,
   withCredentials: true,
   reconnection: true,
-  reconnectionAttempts: 10,
+  reconnectionAttempts: 5,
   reconnectionDelay: 1000,
   reconnectionDelayMax: 5000,
   timeout: 20000,
-  // Désactiver le moteur de socket.io pour forcer l'utilisation de WebSocket
-  // transports: ['websocket'],
-  // Activer le débogage détaillé
-  // debug: true
+  pingInterval: 25000,
+  pingTimeout: 20000,
+  maxPayload: 1000000,
+  upgrade: true,
+  secure: window.location.protocol === 'https:',
+  rejectUnauthorized: isLocalhost ? false : true,
+  query: {
+    EIO: 4,
+    transport: 'polling',
+    t: Date.now()
+  }
 };
 
-console.log('Options de connexion Socket.IO:', JSON.stringify(socketOptions, null, 2));
+// Initialisation de la connexion WebSocket
+function initWebSocket() {
+  if (socket && socket.connected) {
+    console.log('Une connexion WebSocket est déjà établie');
+    return;
+  }
 
-// Créer la connexion Socket.IO
-const socket = io(socketOptions);
+  console.log('🔌 Initialisation de la connexion WebSocket vers:', WS_URL);
+  
+  // Utiliser window.socket pour une portée globale
+  window.socket = io(WS_URL, WS_CONFIG);
+  socket = window.socket; // Référence locale
+  
+  // Gestion des événements de connexion
+  socket.on('connect', () => {
+    console.log('✅ Connecté au serveur WebSocket avec ID:', socket.id);
+    updateConnectionStatus(true, 'Connecté au serveur en temps réel');
+    
+    // Rejoindre la room admin avec le token
+    const token = localStorage.getItem('adminToken');
+    if (token) {
+      socket.emit('join_admin', { token });
+    }
+  });
 
-// Fonction utilitaire pour formater la date
-function formatTimestamp() {
-  return new Date().toISOString().replace('T', ' ').substring(0, 19);
+  socket.on('disconnect', (reason) => {
+    console.log('❌ Déconnecté du serveur WebSocket. Raison:', reason);
+    updateConnectionStatus(false, 'Déconnecté du serveur');
+    
+    if (reason === 'io server disconnect') {
+      console.log('Tentative de reconnexion...');
+      socket.connect();
+    }
+  });
+
+  socket.on('connect_error', (error) => {
+    console.error('❌ Erreur de connexion WebSocket:', error.message);
+    updateConnectionStatus(false, `Erreur: ${error.message}`);
+  });
+  
+  return socket;
 }
+
+// Fonction utilitaire pour mettre à jour l'état de connexion
+function updateConnectionStatus(isConnected, message = '') {
+  const statusElement = document.getElementById('connection-status');
+  if (statusElement) {
+    statusElement.textContent = message;
+    statusElement.className = isConnected ? 'connected' : 'disconnected';
+  }
+}
+
+console.log('🌐 URL de l\'API configurée sur:', API_BASE_URL);
+// Désactiver le cache pour les requêtes fetch
+if (isLocalhost) {
+  // Ne pas mettre en cache les requêtes en développement
+  const originalFetch = window.fetch;
+  window.fetch = async function(resource, options = {}) {
+    // Si c'est une URL relative, on ajoute la base de l'API
+    if (typeof resource === 'string' && resource.startsWith('/')) {
+      resource = API_BASE_URL + resource;
+    }
+    
+    const newOptions = {
+      ...options,
+      headers: {
+        ...options.headers,
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      },
+      cache: 'no-store',
+      credentials: 'include'
+    };
+    
+    console.log('Fetch:', resource, newOptions);
+    try {
+      const response = await originalFetch(resource, newOptions);
+      console.log('Réponse de', resource, ':', response.status, response.statusText);
+      return response;
+    } catch (error) {
+      console.error('Erreur lors de la requête vers', resource, ':', error);
+      throw error;
+    }
+  };
+}
+
+// Initialisation du socket si non défini
+if (!window.socket) {
+  window.socket = io(WS_URL, WS_CONFIG);
+}
+  
+// Créer une référence locale
+const socket = window.socket;
 
 // Log des événements de connexion/déconnexion
 socket.on('connect', () => {
@@ -55,24 +236,39 @@ socket.on('connect', () => {
   // Rejoindre la room admin dès la connexion
   console.log(`[${timestamp}] Envoi de la demande de connexion à la room admin...`);
   
-  // Envoyer la demande de connexion à la room admin avec un timeout
-  const joinAdmin = () => {
-    socket.emit('admin_join', { 
-      timestamp: new Date().toISOString(),
-      clientInfo: {
-        userAgent: navigator.userAgent,
-        url: window.location.href,
-        referrer: document.referrer
+    // Envoyer la demande de connexion à la room admin avec un timeout
+    const joinAdmin = () => {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        console.error('Aucun token admin trouvé');
+        return;
       }
-    }, (response) => {
-      const responseTimestamp = formatTimestamp();
-      if (response) {
-        console.log(`[${responseTimestamp}] ✅ Réponse du serveur après admin_join:`, response);
-      } else {
-        console.error(`[${responseTimestamp}] ❌ Aucune réponse du serveur pour admin_join`);
-      }
-    });
-  };
+      
+      socket.emit('admin_join', { 
+        token: token,
+        timestamp: new Date().toISOString(),
+        clientInfo: {
+          userAgent: navigator.userAgent,
+          url: window.location.href,
+          referrer: document.referrer
+        }
+      }, (response) => {
+        const responseTimestamp = formatTimestamp();
+        if (response) {
+          console.log(`[${responseTimestamp}] ✅ Réponse du serveur après admin_join:`, response);
+          updateConnectionStatus(true, 'Connecté au serveur');
+        } else {
+          console.error(`[${responseTimestamp}] ❌ Aucune réponse du serveur pour admin_join`);
+          updateConnectionStatus(false, 'Erreur de connexion');
+        }
+      });
+    };
+    
+    // Appeler joinAdmin immédiatement
+    joinAdmin();
+    
+    // Et aussi après un délai au cas où
+    setTimeout(joinAdmin, 2000);
   
   // Essayer de rejoindre la room admin immédiatement
   joinAdmin();
@@ -196,32 +392,104 @@ socket.on('new_message', (message) => {
   } else {
     console.log(`[${timestamp}] ℹ️ Section active n'est pas 'messages', pas de rechargement automatique`);
   }
-  
-  // Mettre à jour le compteur de messages non lus
-  console.log(`[${timestamp}] 🔢 Mise à jour des compteurs du tableau de bord...`);
-  updateDashboardCounters();
-  console.log(`[${timestamp}] ✅ Traitement du nouveau message terminé`);
 });
 
+// Gestion des erreurs de connexion WebSocket
 socket.on('connect_error', (error) => {
-  console.error('❌ Erreur de connexion WebSocket:', error);
+  const errorMessage = error.message || 'Erreur inconnue';
+  const timestamp = formatTimestamp();
   
-  // Mettre à jour le statut de connexion dans l'interface
-  const statusIndicator = document.getElementById('connection-status');
-  if (statusIndicator) {
-    statusIndicator.className = 'inline-block w-3 h-3 rounded-full bg-red-500 mr-2';
-    statusIndicator.title = 'Déconnecté - Tentative de reconnexion...';
+  // Détails de l'erreur pour le débogage
+  const errorDetails = {
+    message: errorMessage,
+    type: error.type,
+    description: error.description,
+    context: error.context,
+    timestamp: new Date().toISOString()
+  };
+  
+  console.error(`[${timestamp}] ❌ Erreur de connexion WebSocket:`, errorDetails);
+  
+  // Vérifier si nous sommes toujours sur la page d'administration
+  if (!window.location.pathname.includes('/admin')) {
+    console.log('Hors de l\'administration, pas de notification affichée');
+    return;
   }
   
-  // Tenter de se reconnecter après un délai
-  setTimeout(() => {
-    console.log('🔄 Tentative de reconnexion...');
-    socket.connect();
-  }, 5000);
+  // Vérifier si une notification d'erreur est déjà affichée
+  const existingNotification = document.querySelector('.connection-error-notification');
+  if (existingNotification) {
+    console.log('Notification d\'erreur déjà affichée');
+    return;
+  }
+  
+  // Créer et afficher une notification d'erreur
+  const notification = document.createElement('div');
+  notification.className = 'connection-error-notification fixed bottom-4 right-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-xl z-50 max-w-md';
+  notification.innerHTML = `
+    <div class="flex items-start">
+      <div class="flex-shrink-0 pt-0.5">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+        </svg>
+      </div>
+      <div class="ml-3">
+        <h3 class="text-sm font-medium">Problème de connexion au serveur</h3>
+        <div class="mt-1 text-sm text-red-100">
+          <p>${errorMessage}</p>
+          <p class="mt-1 text-xs opacity-75">Tentative de reconnexion en cours...</p>
+        </div>
+        <div class="mt-2">
+          <button onclick="window.location.reload()" class="text-xs font-medium text-white underline hover:text-red-200">
+            Actualiser la page
+          </button>
+        </div>
+      </div>
+      <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-red-200 hover:text-white">
+        <span class="sr-only">Fermer</span>
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+  `;
+  
+  // Ajouter la notification au document
+  document.body.appendChild(notification);
+  
+  // Supprimer la notification après 15 secondes
+  const removeNotification = () => {
+    if (document.body.contains(notification)) {
+      notification.style.opacity = '0';
+      notification.style.transition = 'opacity 0.5s ease';
+      setTimeout(() => notification.remove(), 500);
+    }
+  };
+  
+  const notificationTimeout = setTimeout(removeNotification, 15000);
+  
+  // Nettoyer le timeout si le composant est démonté
+  notification._cleanup = () => {
+    clearTimeout(notificationTimeout);
+  };
+  
+  // Journalisation des détails de l'erreur pour le débogage
+  console.group('Détails de l\'erreur de connexion WebSocket');
+  console.log('Type d\'erreur:', error.type);
+  console.log('Description:', error.description);
+  console.log('Contexte:', error.context);
+  console.log('Erreur complète:', error);
+  console.groupEnd();
+  
+  // Tenter de se reconnecter automatiquement
+  console.log(`[${timestamp}] Tentative de reconnexion...`);
+  socket.connect();
 });
 
+// Gestion de la déconnexion WebSocket
 socket.on('disconnect', (reason) => {
-  console.log('🔌 Déconnecté du serveur WebSocket. Raison:', reason);
+  const timestamp = formatTimestamp();
+  console.log(`[${timestamp}] 🔌 Déconnecté du serveur WebSocket. Raison:`, reason);
   
   // Mettre à jour le statut de connexion dans l'interface
   const statusIndicator = document.getElementById('connection-status');
@@ -232,7 +500,7 @@ socket.on('disconnect', (reason) => {
   
   if (reason === 'io server disconnect') {
     // Si le serveur a déconnecté, on se reconnecte
-    console.log('🔄 Tentative de reconnexion au serveur...');
+    console.log(`[${timestamp}] 🔄 Tentative de reconnexion au serveur...`);
     socket.connect();
   }
 });
@@ -777,7 +1045,7 @@ async function viewOrder(orderId) {
         console.log(`Affichage des détails de la commande #${orderId}`);
         
         // Récupérer les détails complets de la commande
-        const response = await fetch(`${API_URL}/orders/${orderId}`);
+        const response = await fetch(`${API_URL}/api/orders/${orderId}`);
         
         if (!response.ok) {
             throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
@@ -887,62 +1155,105 @@ async function viewOrder(orderId) {
         
     } catch (error) {
         console.error('Erreur lors du chargement des détails de la commande:', error);
-        alert('Erreur lors du chargement des détails de la commande');
+        
+        // Gestion spécifique des erreurs de réseau
+        if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+            error.message = 'Impossible de se connecter au serveur. Veuillez vérifier votre connexion Internet.';
+        }
+        
+        // Afficher une notification à l'utilisateur
+        if (typeof showNotification === 'function') {
+            showNotification(error.message || 'Erreur lors du chargement des détails de la commande', 'error');
+        } else {
+            alert('Erreur lors du chargement des détails de la commande: ' + error.message);
+        }
+        
+        // Si l'erreur est une erreur d'authentification, rediriger vers la page de connexion
+        if (error.status === 401) {
+            window.location.href = '/admin/login';
+        }
+        
+        throw error;
     }
 }
 
 // Fonction pour mettre à jour le statut d'une commande
-async function updateOrderStatus(orderId, newStatus) {
+async function updateOrderStatus(orderIdParam, newStatusParam) {
     try {
-        console.log(`Mise à jour du statut de la commande #${orderId} vers: ${newStatus}`);
-        
-        const response = await fetch(`${API_URL}/orders/${orderId}/status`, {
+        // Résoudre l'ID de la commande (prise en charge des appels sans paramètres)
+        const resolvedOrderId = orderIdParam ?? currentOrderId;
+        if (!resolvedOrderId) {
+            console.error('Aucun ID de commande fourni pour la mise à jour du statut.');
+            showNotification('ID de commande manquant', 'error');
+            return;
+        }
+
+        // Résoudre le statut (depuis le paramètre ou le sélecteur du modal)
+        let selectedStatus = newStatusParam;
+        if (!selectedStatus) {
+            const selectEl = document.getElementById('order-status');
+            selectedStatus = selectEl ? selectEl.value : 'pending';
+        }
+
+        // Mapper les libellés FR vers les valeurs API attendues
+        const mapToApiStatus = (s) => {
+            if (!s) return 'pending';
+            const k = s.toString().trim().toLowerCase();
+            const map = {
+                'nouvelle': 'pending',
+                'en attente': 'pending',
+                'en cours': 'processing',
+                'terminée': 'completed',
+                'livrée': 'delivered',
+                'expédiée': 'shipped',
+                'annulée': 'cancelled',
+                // Valeurs déjà en anglais
+                'pending': 'pending',
+                'processing': 'processing',
+                'completed': 'completed',
+                'delivered': 'delivered',
+                'shipped': 'shipped',
+                'cancelled': 'cancelled'
+            };
+            return map[k] || k;
+        };
+        const apiStatus = mapToApiStatus(selectedStatus);
+
+        console.log(`Mise à jour du statut de la commande #${resolvedOrderId} vers: ${selectedStatus} (API: ${apiStatus})`);
+
+        const result = await apiFetch(`/api/orders/${resolvedOrderId}/status`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ status: newStatus })
+            body: JSON.stringify({ status: apiStatus })
         });
-        
-        if (!response.ok) {
-            throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const result = await response.json();
+
         console.log('Statut mis à jour avec succès:', result);
-        
-        // Mettre à jour l'affichage
-        const orderElement = document.querySelector(`tr[data-order-id="${orderId}"]`);
-        if (orderElement) {
-            const statusElement = orderElement.querySelector('.status-badge');
-            if (statusElement) {
-                statusElement.className = `status-badge px-2 py-1 rounded ${getStatusClass(newStatus)}`;
-                statusElement.textContent = newStatus;
-            }
+
+        // Fermer le modal (UI statique)
+        const orderModal = document.getElementById('order-modal');
+        if (orderModal) {
+            orderModal.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        } else {
+            // Fallback pour l'ancien modal dynamique
+            const modal = document.querySelector('.fixed.inset-0');
+            if (modal) modal.remove();
         }
-        
-        // Fermer la modal
-        const modal = document.querySelector('.fixed.inset-0');
-        if (modal) {
-            modal.remove();
-        }
-        
-        // Rafraîchir le tableau de bord
+
+        // Rafraîchir les données
         updateDashboard();
-        
-        // Afficher une notification
-        showNotification(`Statut de la commande #${orderId} mis à jour avec succès`, 'success');
-        
+        if (document.getElementById('orders') && !document.getElementById('orders').classList.contains('hidden')) {
+            loadOrders().catch(e => console.error('Erreur lors du rechargement des commandes:', e));
+        }
+
+        showNotification(`Statut de la commande #${resolvedOrderId} mis à jour avec succès`, 'success');
+
     } catch (error) {
         console.error('Erreur lors de la mise à jour du statut de la commande:', error);
-        alert('Erreur lors de la mise à jour du statut de la commande');
+        showNotification('Erreur lors de la mise à jour du statut de la commande', 'error');
     }
 }
 
-// Fonctions pour la gestion des commandes
-let allOrders = [];
-let currentFilter = 'all';
-let currentSearchTerm = '';
+// Ces variables sont maintenant définies en haut du fichier
 
 // Fonction utilitaire pour obtenir le nom de l'expéditeur d'un message
 function getMessageSenderName(message) {
@@ -1434,7 +1745,7 @@ async function markAsRead() {
     if (!currentMessageId) return;
     
     try {
-        const response = await fetch(`${API_URL}/messages/${currentMessageId}/status`, {
+        const response = await apiFetch(`/api/messages/${currentMessageId}/status`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -1458,90 +1769,7 @@ async function markAsRead() {
     }
 }
 
-// Supprimer un message
-async function deleteMessage(messageId) {
-    console.log('Fonction deleteMessage appelée avec messageId:', messageId);
-    
-    if (!messageId) {
-        console.error('Erreur: Aucun ID de message fourni');
-        alert('Erreur: Impossible de supprimer le message - ID manquant');
-        return;
-    }
-    
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce message ? Cette action est irréversible.')) {
-        console.log('Suppression annulée par l\'utilisateur');
-        return;
-    }
-
-    try {
-        console.log('Tentative de suppression du message ID:', messageId);
-        const response = await fetch(`${API_URL}/messages/${messageId}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'Cache': 'no-cache'
-            },
-            credentials: 'include',
-            mode: 'cors'
-        });
-
-        console.log('Réponse reçue:', response.status, response.statusText);
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Erreur lors de la suppression:', response.status, errorText);
-            throw new Error(errorText || 'Erreur lors de la suppression du message');
-        }
-
-        const result = await response.json().catch(e => {
-            console.error('Erreur lors du parsing de la réponse JSON:', e);
-            return { success: true }; // On considère que la suppression a réussi même sans réponse JSON valide
-        });
-        
-        console.log('Résultat de la suppression:', result);
-
-        // Fermer le modal
-        closeMessageModal();
-        
-        // Recharger la liste des messages
-        loadMessages();
-        
-        // Mettre à jour le tableau de bord
-        updateDashboard();
-        
-        alert('Message supprimé avec succès');
-    } catch (error) {
-        console.error('Erreur lors de la suppression du message:', error);
-        alert('Erreur lors de la suppression du message: ' + (error.message || 'Erreur inconnue'));
-    }
-}
-
-// Fonctions utilitaires
-function getStatusClass(status) {
-    switch(status) {
-        case 'Nouvelle':
-            return 'bg-blue-100 text-blue-800';
-        case 'En cours':
-            return 'bg-yellow-100 text-yellow-800';
-        case 'Terminée':
-            return 'bg-green-100 text-green-800';
-        case 'Annulée':
-            return 'bg-red-100 text-red-800';
-        default:
-            return 'bg-gray-100 text-gray-800';
-    }
-}
-
-function closeModal() {
-    document.getElementById('order-modal').classList.add('hidden');
-    document.body.classList.remove('overflow-hidden');
-}
-
-function closeMessageModal() {
-    document.getElementById('message-modal').classList.add('hidden');
-    document.body.classList.remove('overflow-hidden');
-}
+// ...
 
 // Supprimer une commande
 async function deleteOrder() {
@@ -1550,20 +1778,16 @@ async function deleteOrder() {
     }
 
     try {
-        const response = await fetch(`${API_URL}/orders/${currentOrderId}`, {
+        const result = await apiFetch(`/api/orders/${currentOrderId}`, {
             method: 'DELETE'
         });
-
-        if (!response.ok) {
-            throw new Error('Erreur lors de la suppression de la commande');
-        }
 
         // Fermer le modal et recharger la liste des commandes
         closeModal();
         loadOrders();
         
         // Afficher un message de succès
-        alert('Commande supprimée avec succès');
+        showNotification('Commande supprimée avec succès', 'success');
     } catch (error) {
         console.error('Erreur lors de la suppression de la commande:', error);
         alert('Une erreur est survenue lors de la suppression de la commande');
@@ -1594,6 +1818,56 @@ function getMessageSenderName(message) {
     }
     
     return 'Sans nom';
+}
+
+// Supprimer un message
+async function deleteMessage(messageId) {
+    console.log('Fonction deleteMessage appelée avec messageId:', messageId);
+    
+    if (!messageId) {
+        console.error('Erreur: Aucun ID de message fourni');
+        alert('Erreur: Impossible de supprimer le message - ID manquant');
+        return;
+    }
+    
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce message ? Cette action est irréversible.')) {
+        console.log('Suppression annulée par l\'utilisateur');
+        return;
+    }
+
+    try {
+        console.log('Tentative de suppression du message ID:', messageId);
+        const result = await apiFetch(`/api/messages/${messageId}`, {
+            method: 'DELETE'
+        });
+        
+        console.log('Résultat de la suppression:', result);
+
+        // Fermer le modal
+        closeMessageModal();
+        
+        // Recharger la liste des messages
+        loadMessages();
+        
+        // Mettre à jour le tableau de bord
+        updateDashboard();
+        
+        showNotification('Message supprimé avec succès', 'success');
+    } catch (error) {
+        console.error('Erreur lors de la suppression du message:', error);
+        showNotification('Erreur lors de la suppression du message: ' + (error.message || 'Erreur inconnue'), 'error');
+    }
+}
+
+// Fonctions utilitaires
+function closeModal() {
+    document.getElementById('order-modal').classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
+}
+
+function closeMessageModal() {
+    document.getElementById('message-modal').classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
 }
 
 // Exposer les fonctions au scope global

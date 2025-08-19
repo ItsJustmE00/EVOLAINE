@@ -5,6 +5,9 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useTranslation } from 'react-i18next';
 
+// Base URL de l'API (configurée via les variables d'environnement Vite)
+const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL?.replace(/\/$/, '') || '';
+
 interface FormData {
   fullName: string;
   phone: string;
@@ -48,7 +51,8 @@ const Contact = () => {
     
     try {
       console.log('Envoi de la requête à l\'API...');
-      const response = await fetch('/api/contact', {
+      const url = `${API_BASE}/api/contact`;
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -58,11 +62,24 @@ const Contact = () => {
         credentials: 'same-origin'
       });
       
-      const responseData = await response.json();
+      // Tenter de parser la réponse en JSON si possible
+      let responseData: any = null;
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        responseData = await response.json();
+      } else {
+        const text = await response.text();
+        try {
+          responseData = JSON.parse(text);
+        } catch {
+          responseData = { message: text };
+        }
+      }
       console.log('Réponse du serveur:', responseData);
       
       if (!response.ok) {
-        throw new Error(responseData.error || 'Erreur lors de l\'envoi du message');
+        const serverMsg = (responseData && (responseData.error || responseData.message)) || undefined;
+        throw new Error(serverMsg || 'Erreur lors de l\'envoi du message');
       }
       
       // Marquer le formulaire comme soumis avec succès

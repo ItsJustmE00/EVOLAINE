@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { ShoppingBag, User, Phone, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Cart from './Cart';
+// Base URL de l'API (variables d'environnement Vite)
+const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL?.replace(/\/$/, '') || '';
 import { useCart } from '../contexts/CartContext';
 
 // Définition du composant
@@ -57,7 +59,7 @@ const CartPage = () => {
     console.log('Envoi de la commande au serveur...', orderData);
     
     try {
-      const response = await fetch('http://localhost:3004/api/orders', {
+      const response = await fetch(`${API_BASE}/api/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -65,14 +67,21 @@ const CartPage = () => {
         body: JSON.stringify(orderData)
       });
       
+      let result: any = null;
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        result = await response.json();
+      } else {
+        const text = await response.text();
+        try { result = JSON.parse(text); } catch { result = { message: text }; }
+      }
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.details || errorData.error || 'Erreur lors de la soumission de la commande';
-        console.error('Détails de l\'erreur:', errorData);
+        const errorMessage = result?.details || result?.error || result?.message || 'Erreur lors de la soumission de la commande';
+        console.error('Détails de l\'erreur:', result);
         throw new Error(errorMessage);
       }
       
-      const result = await response.json();
       console.log('Commande enregistrée avec succès:', result);
       
       // Vider le panier
