@@ -40,28 +40,29 @@ let pool;
 try {
   pool = new Pool(dbConfig);
   console.log('✅ Pool de connexions créé avec succès');
+  
+  // Gestion des erreurs de connexion
+  pool.on('error', (err) => {
+    console.error('\n❌ ERREUR DU POOL DE CONNEXIONS');
+    console.error('============================');
+    console.error('Message:', err.message);
+    console.error('Code:', err.code);
+    console.error('Stack trace:', err.stack);
+    console.error('\nTentative de reconnexion...');
+  });
+  
+  console.log('📡 Configuration de la base de données:');
+  console.log(`- Hôte: ${dbConfig.host}`);
+  console.log(`- Base de données: ${dbConfig.database}`);
+  console.log(`- Port: ${dbConfig.port}`);
+  console.log(`- SSL: ${dbConfig.ssl ? 'activé' : 'désactivé'}`);
+  console.log(`- Utilisateur: ${dbConfig.user}`);
+  
 } catch (err) {
   console.error('❌ Erreur lors de la création du pool de connexions:', err.message);
   console.error('Stack trace:', err.stack);
   process.exit(1);
 }
-
-// Gestion des erreurs de connexion
-pool.on('error', (err) => {
-  console.error('\n❌ ERREUR DU POOL DE CONNEXIONS');
-  console.error('============================');
-  console.error('Message:', err.message);
-  console.error('Code:', err.code);
-  console.error('Stack trace:', err.stack);
-  console.error('\nTentative de reconnexion...');
-});
-
-console.log('📡 Configuration de la base de données:');
-console.log(`- Hôte: ${dbConfig.host}`);
-console.log(`- Base de données: ${dbConfig.database}`);
-console.log(`- Port: ${dbConfig.port}`);
-console.log(`- SSL: ${dbConfig.ssl ? 'activé' : 'désactivé'}`);
-console.log(`- Utilisateur: ${dbConfig.user}`);
 
 // Fonction pour tester la connexion à la base de données
 async function testDatabaseConnection() {
@@ -118,27 +119,6 @@ if (process.env.NODE_ENV !== 'test') {
     process.exit(1);
   });
 }
-
-// Création du pool de connexions
-let pool;
-try {
-  pool = new Pool(dbConfig);
-  console.log('✅ Pool de connexions créé avec succès');
-} catch (err) {
-  console.error('❌ Erreur lors de la création du pool de connexions:', err.message);
-  console.error('Stack trace:', err.stack);
-  process.exit(1);
-}
-
-// Gestion des erreurs de connexion
-pool.on('error', (err) => {
-  console.error('\n❌ ERREUR DU POOL DE CONNEXIONS');
-  console.error('============================');
-  console.error('Message:', err.message);
-  console.error('Code:', err.code);
-  console.error('Stack trace:', err.stack);
-  console.error('\nTentative de reconnexion...');
-});
 
 // Test de la connexion
 async function testConnection() {
