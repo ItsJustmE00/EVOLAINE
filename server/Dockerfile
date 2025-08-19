@@ -22,16 +22,18 @@ FROM node:18-alpine
 # Définir le répertoire de travail
 WORKDIR /app
 
+# Créer un dossier pour les logs
+RUN mkdir -p logs
+
 # Copier les fichiers nécessaires depuis l'étape de construction
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/server.js .
 COPY --from=builder /app/db.js .
 COPY --from=builder /app/admin ./admin
-COPY --from=builder /app/.env ./
 
-# Créer un dossier pour les logs
-RUN mkdir -p logs
+# Créer un fichier .env vide s'il n'existe pas
+RUN touch .env
 
 # Exposer le port
 EXPOSE 3004
