@@ -8,6 +8,7 @@ type CartItem = {
   price: string;
   image: string;
   quantity: number;
+  category?: string;
 };
 
 type CartContextType = {
@@ -65,7 +66,17 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const removeFromCart = (productId: number) => {
-    setCart(prevCart => prevCart.filter(item => item.id !== productId));
+    try {
+      console.log('Tentative de suppression du produit ID:', productId);
+      setCart(prevCart => {
+        const newCart = prevCart.filter(item => item.id !== productId);
+        console.log('Nouveau panier après suppression:', newCart);
+        return newCart;
+      });
+    } catch (error) {
+      console.error('Erreur dans removeFromCart:', error);
+      // Ne pas propager l'erreur pour éviter les crashs
+    }
   };
 
   const updateQuantity = (productId: number, quantity: number) => {
@@ -87,7 +98,9 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const calculateTotal = (items: CartItem[]) => {
     return items.reduce((total, item) => {
-      const price = parseFloat(item.price) || 0;
+      // Convertir le prix en nombre en supprimant les espaces et en remplaçant les virgules par des points
+      const priceStr = item.price.toString().replace(/\s+/g, '').replace(',', '.');
+      const price = parseFloat(priceStr) || 0;
       return total + (price * item.quantity);
     }, 0);
   };

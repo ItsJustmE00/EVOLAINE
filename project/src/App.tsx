@@ -1,38 +1,26 @@
 
-import { Routes, Route, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import Products from './components/Products';
 import About from './components/About';
 import Testimonials from './components/Testimonials';
 import Contact from './components/Contact';
-import Cart from './components/Cart';
+import CartPage from './components/CartPage';
 import ProductDetails from './components/ProductDetails';
 import Footer from './components/Footer';
 import { ProductSelectionProvider } from './contexts/ProductSelectionContext';
 import { CartProvider } from './contexts/CartContext';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { NotificationProvider } from './components/ui/Notification';
 import ScrollToTop from './components/ScrollToTop';
+import ScrollingBanner from './components/ScrollingBanner';
 import './i18n/i18n'; // Import de la configuration i18n
 
-// Composant pour gérer le défilement vers les sections
+// Composant pour gérer le défilement vers les sections (déplacé dans ScrollToTop)
 const ScrollToSection = () => {
-  const { pathname, hash } = useLocation();
-
-  useEffect(() => {
-    // Si on a un hash dans l'URL et qu'on est sur la page d'accueil
-    if (hash && pathname === '/') {
-      const element = document.getElementById(hash.substring(1));
-      if (element) {
-        // Petit délai pour s'assurer que le composant est rendu
-        setTimeout(() => {
-          element.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
-      }
-    }
-  }, [pathname, hash]);
-
+  // Ce composant est maintenant obsolète car la logique a été déplacée dans ScrollToTop
+  // Il est conservé pour la rétrocompatibilité
   return null;
 };
 
@@ -49,23 +37,28 @@ function App() {
 
   return (
     <LanguageProvider>
-      <ProductSelectionProvider>
-        <CartProvider>
-          <div className="min-h-screen flex flex-col">
-            <ScrollToTop />
-            <Header />
-            <main className="flex-grow pt-24">
+      <CartProvider>
+        <ProductSelectionProvider>
+          <NotificationProvider>
+            <div className="min-h-screen flex flex-col">
+              <ScrollingBanner />
+              <Header />
+              <ScrollToTop />
               <ScrollToSection />
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/panier" element={<Cart />} />
-                <Route path="/produit/:id" element={<ProductDetails />} />
-              </Routes>
-            </main>
-            <Footer />
-          </div>
-        </CartProvider>
-      </ProductSelectionProvider>
+              <main className="flex-grow">
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/products" element={<Products />} />
+                  <Route path="/cart" element={<CartPage />} />
+                  <Route path="/product/:id" element={<ProductDetails />} />
+                  <Route path="/panier" element={<Navigate to="/cart" replace />} />
+                </Routes>
+              </main>
+              <Footer />
+            </div>
+          </NotificationProvider>
+        </ProductSelectionProvider>
+      </CartProvider>
     </LanguageProvider>
   );
 }

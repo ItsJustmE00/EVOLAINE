@@ -9,9 +9,9 @@ const About = () => {
       <div className="container mx-auto px-4 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           <div className="space-y-8">
-            <div>
+            <div className="text-center">
               <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-                {t('about.title.line1')}
+                <span className="block">{t('about.title.line1')}</span>
                 <span className="text-pink-600 block">{t('about.title.line2')}</span>
               </h2>
               <p className="text-lg text-gray-600 leading-relaxed mb-6">

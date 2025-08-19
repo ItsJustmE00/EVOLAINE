@@ -1,0 +1,172 @@
+import { useEffect } from 'react';
+import { useCart } from '../contexts/CartContext';
+import { ShoppingBag, Plus, Minus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
+
+interface CartProps {
+  isModal?: boolean;
+}
+
+const Cart = ({ isModal = true }: CartProps) => {
+  // Récupération du panier et des fonctions associées
+  const { cart, cartTotal, itemCount, removeFromCart, updateQuantity } = useCart();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
+  
+  // Classes conditionnelles en fonction du mode d'affichage (modal ou page)
+  const containerClasses = isModal 
+    ? 'max-h-[70vh] overflow-y-auto p-4'
+    : 'p-4';
+    
+  const footerClasses = isModal
+    ? 'sticky bottom-0 bg-white border-t border-gray-200 p-4'
+    : 'border-t border-gray-200 p-6';
+  
+  // Effet pour déboguer le rendu du composant
+  useEffect(() => {
+    console.log('Cart component mounted');
+    console.log('Cart items:', cart);
+    console.log('Item count:', itemCount);
+    
+    return () => {
+      console.log('Cart component unmounted');
+    };
+  }, [cart, itemCount]);
+
+  // Gestion de la soumission du formulaire
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log('Soumission du formulaire');
+    // Ici, vous pouvez ajouter la logique de soumission de commande
+  };
+
+  // Gestion du clic sur le bouton de retour
+  const handleContinueShopping = () => {
+    if (isModal) {
+      window.history.back();
+    } else {
+      window.location.href = '/';
+    }
+  };
+
+  // Si le panier est vide
+  if (itemCount === 0) {
+    return (
+      <div className={`flex flex-col items-center justify-center p-8 text-center ${!isModal ? 'min-h-[50vh]' : ''}`}>
+        <ShoppingBag className="h-12 w-12 text-gray-400 mb-4" />
+        <h3 className="text-lg font-medium text-gray-900">
+          {t('cart.emptyCart', 'Votre panier est vide')}
+        </h3>
+        <p className="mt-1 text-gray-500">
+          {t('cart.addItems', 'Commencez à ajouter des articles à votre panier')}
+        </p>
+        <button
+          onClick={handleContinueShopping}
+          className="mt-6 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-pink-600 hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
+        >
+          {t('cart.continueShopping', 'Poursuivre les achats')}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`divide-y divide-gray-200 ${isModal ? 'max-h-[70vh] flex flex-col' : ''}`}>
+      <div className={`${containerClasses} ${isModal ? 'flex-1 overflow-y-auto' : ''}`}>
+        <div className="flow-root">
+          <ul role="list" className="-my-6 divide-y divide-gray-200">
+            {cart.map((item) => (
+              <li key={item.id} className="py-6 flex">
+                <div className="flex-shrink-0 w-24 h-24 border border-gray-200 rounded-md overflow-hidden">
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    className="w-full h-full object-center object-cover"
+                  />
+                </div>
+
+                <div className="ml-4 flex-1 flex flex-col">
+                  <div>
+                    <div className="flex justify-between text-base font-medium text-gray-900">
+                      <h3>{item.name}</h3>
+                      <p className="ml-4">{item.price} {t('common.currency', 'DH')}</p>
+                    </div>
+                    <p className="mt-1 text-sm text-gray-500">
+                      {item.category || t('common.noCategory', 'Non catégorisé')}
+                    </p>
+                  </div>
+                  <div className="flex-1 flex items-end justify-between text-sm">
+                    <div className="flex items-center">
+                      <button
+                        type="button"
+                        onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
+                        className="text-gray-500 hover:text-gray-700"
+                        aria-label={t('cart.decreaseQuantity', 'Diminuer la quantité')}
+                      >
+                        <Minus className="h-4 w-4" />
+                      </button>
+                      <span className="mx-2 text-gray-700">{item.quantity}</span>
+                      <button
+                        type="button"
+                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        className="text-gray-500 hover:text-gray-700"
+                        aria-label={t('cart.increaseQuantity', 'Augmenter la quantité')}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <div className="flex">
+                      <button
+                        type="button"
+                        onClick={() => removeFromCart(item.id)}
+                        className="font-medium text-pink-600 hover:text-pink-500"
+                      >
+                        {t('cart.remove', 'Supprimer')}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      <div className={footerClasses}>
+        <div className="flex justify-between text-base font-medium text-gray-900 mb-4">
+          <p>{t('cart.subtotal', 'Sous-total')}</p>
+          <p>{cartTotal} {t('common.currency', 'DH')}</p>
+        </div>
+        <p className="mt-0.5 text-sm text-gray-500">
+          {t('cart.shippingNotice', 'Frais de livraison et taxes calculés à la caisse.')}
+        </p>
+        <div className="mt-6">
+          <button
+            onClick={handleSubmit}
+            className="w-full flex justify-center items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-pink-600 hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
+          >
+            {t('cart.checkout', 'Passer la commande')}
+          </button>
+        </div>
+        {isModal && (
+          <div className="mt-6 flex justify-center text-sm text-center text-gray-500">
+            <p>
+              {t('cart.or', 'ou')}{' '}
+              <button
+                onClick={handleContinueShopping}
+                className="text-pink-600 font-medium hover:text-pink-500"
+              >
+                {t('cart.continueShopping', 'Poursuivre les achats')}
+                <span aria-hidden="true"> &rarr;</span>
+              </button>
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Cart;

@@ -37,6 +37,75 @@ export const fr: Translations = {
     cart: "Panier",
     menu: "Menu"
   },
+  cart: {
+    title: "Votre panier",
+    yourCart: "Votre panier",
+    subtotal: "Sous-total",
+    shipping: "Livraison",
+    shippingNotice: "Frais de livraison et taxes calculés à la caisse.",
+    total: "Total",
+    remove: "Supprimer",
+    continueShopping: "Continuer vos achats",
+    checkout: "Passer la commande",
+    orderNumber: "Numéro de commande",
+    quantity: "Quantité",
+    close: "Fermer",
+    closeCart: "Fermer le panier",
+    price: "Prix",
+    decreaseQuantity: "Diminuer la quantité",
+    increaseQuantity: "Augmenter la quantité",
+    noCategory: "Sans catégorie",
+    itemAdded: "Article ajouté au panier",
+    itemRemoved: "Article retiré du panier",
+    updateQuantity: "Quantité mise à jour",
+    addItems: "Ajouter des articles",
+    summary: "Récapitulatif",
+    item: "article",
+    items: "articles",
+    emptyCart: {
+      title: "Votre panier est vide",
+      message: "Parcourez notre catalogue pour découvrir nos produits",
+      browseProducts: "Découvrir nos produits"
+    },
+    success: {
+      title: "Commande passée avec succès !",
+      message: "Merci pour votre commande. Nous vous contacterons bientôt pour confirmer les détails.",
+      backHome: "Retour à l'accueil"
+    },
+    form: {
+      firstName: "Prénom *",
+      lastName: "Nom *",
+      phone: "Téléphone *",
+      address: "Adresse complète *",
+      notesOptional: "Notes (optionnel)",
+      notesPlaceholder: "Instructions spéciales pour la livraison...",
+      processing: "Traitement...",
+      submit: "Passer la commande"
+    }
+  },
+  checkout: {
+    title: "Paiement",
+    deliveryInfo: "Informations de livraison",
+    contactInfo: "Informations de contact",
+    paymentMethod: "Moyen de paiement",
+    orderSummary: "Récapitulatif de la commande",
+    firstName: "Prénom",
+    lastName: "Nom",
+    phone: "Téléphone",
+    email: "Email",
+    address: "Adresse de livraison",
+    city: "Ville",
+    postalCode: "Code postal",
+    country: "Pays",
+    notes: "Notes pour la livraison (facultatif)",
+    submit: "Valider la commande",
+    submitting: "Traitement en cours...",
+    success: "Commande validée avec succès !",
+    error: "Une erreur est survenue lors du traitement de votre commande.",
+    requiredField: "Ce champ est requis",
+    invalidEmail: "Veuillez entrer une adresse email valide",
+    invalidPhone: "Veuillez entrer un numéro de téléphone valide"
+  },
   productDetail: {
     back: "Retour",
     inStock: "En stock",
@@ -88,7 +157,7 @@ export const fr: Translations = {
   products: {
     title: "Nos Produits",
     signature: "Signature",
-    subtitle: "Notre collection EVOLAINE réunit l'essentiel des soins intimes pour révéler toute la beauté et la lumière de votre peau.",
+    subtitle: "Notre collection EVOLAINE réunit l'essence des soins intimes pour révéler toute la beauté et la lumière de votre peau.",
     addToCart: "Ajouter au panier",
     addToCartButton: "Ajouter au panier",
     viewDetails: "Voir les détails",
@@ -262,34 +331,7 @@ export const fr: Translations = {
       }
     }
   },
-  cart: {
-    title: "Votre Panier",
-    summary: "Récapitulatif",
-    subtotal: "Sous-total",
-    total: "Total",
-    item: "article",
-    items: "articles",
-    empty: {
-      title: "Votre panier est vide",
-      message: "Parcourez nos produits pour ajouter des articles à votre panier.",
-      browseProducts: "Voir les produits"
-    },
-    success: {
-      title: "Commande passée avec succès !",
-      message: "Merci pour votre commande. Nous vous contacterons bientôt pour confirmer.",
-      backHome: "Retour à l'accueil"
-    },
-    form: {
-      firstName: "Prénom *",
-      lastName: "Nom *",
-      phone: "Téléphone *",
-      address: "Adresse complète *",
-      notesOptional: "Notes (optionnel)",
-      notesPlaceholder: "Instructions spéciales pour la livraison...",
-      processing: "Traitement...",
-      submit: "Passer la commande"
-    }
-  },
+
   footer: {
     description: "Votre partenaire beauté au quotidien, pour une hygiène intime rafraîchissante et des soins naturels qui prennent soin de vous.",
     quick_links: "Liens rapides",
@@ -333,7 +375,7 @@ export const ar: Translations = {
   common: {
     open_menu: "افتح القائمة",
     close_menu: "أغلق القائمة",
-    currency: "درهم"
+    currency: "د.م."
   },
   navigation: {
     home: "الرئيسية",
@@ -573,12 +615,30 @@ export const ar: Translations = {
 
   cart: {
     title: "سلة التسوق",
-    summary: "الملخص",
-    subtotal: "المجموع الفرعي",
-    total: "الإجمالي",
+    yourCart: "سلة التسوق الخاصة بك",
     item: "عنصر",
     items: "عناصر",
-    empty: {
+    subtotal: "المجموع الفرعي",
+    shipping: "الشحن",
+    shippingNotice: "يتم احتساب رسوم الشحن والضرائب عند الدفع.",
+    total: "الإجمالي",
+    remove: "حذف",
+    continueShopping: "متابعة التسوق",
+    checkout: "إتمام الطلب",
+    orderNumber: "رقم الطلب",
+    close: "إغلاق",
+    closeCart: "إغلاق السلة",
+    quantity: "الكمية",
+    price: "السعر",
+    decreaseQuantity: "تقليل الكمية",
+    increaseQuantity: "زيادة الكمية",
+    noCategory: "غير مصنف",
+    itemAdded: "تمت إضافة المنتج إلى السلة",
+    itemRemoved: "تمت إزالة المنتج من السلة",
+    updateQuantity: "تم تحديث الكمية",
+    addItems: "إضافة منتجات",
+    summary: "الملخص",
+    emptyCart: {
       title: "سلة التسوق فارغة",
       message: "تصفح منتجاتنا لإضافة عناصر إلى سلة التسوق.",
       browseProducts: "عرض المنتجات"
@@ -598,6 +658,29 @@ export const ar: Translations = {
       processing: "جارٍ المعالجة...",
       submit: "إرسال الطلب"
     }
+  },
+  checkout: {
+    title: "الدفع",
+    deliveryInfo: "معلومات التوصيل",
+    contactInfo: "معلومات الاتصال",
+    paymentMethod: "طريقة الدفع",
+    orderSummary: "ملخص الطلب",
+    firstName: "الاسم الشخصي",
+    lastName: "الاسم العائلي",
+    phone: "الهاتف",
+    email: "البريد الإلكتروني",
+    address: "عنوان التوصيل",
+    city: "المدينة",
+    postalCode: "الرمز البريدي",
+    country: "البلد",
+    notes: "ملاحظات التوصيل (اختياري)",
+    submit: "تأكيد الطلب",
+    submitting: "جاري المعالجة...",
+    success: "تم تأكيد الطلب بنجاح!",
+    error: "حدث خطأ أثناء معالجة طلبك. يرجى المحاولة مرة أخرى.",
+    requiredField: "هذا الحقل مطلوب",
+    invalidEmail: "الرجاء إدخال عنوان بريد إلكتروني صالح",
+    invalidPhone: "الرجاء إدخال رقم هاتف صالح"
   },
   footer: {
     description: "شريكك اليومي في العناية بالجمال، لنظافة شخصية منعشة وعناية طبيعية تعتني بك.",

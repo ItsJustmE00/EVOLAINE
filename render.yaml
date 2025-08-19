@@ -1,13 +1,45 @@
-﻿services:
+# Configuration pour le service web (backend)
+services:
   - type: web
     name: evolaine-backend
     env: node
-    buildCommand: cd server && npm install
+    region: frankfurt  # Choisissez la région la plus proche de vos utilisateurs
+    buildCommand: cd server && npm ci && npm run build
     startCommand: node server.js
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 3003
+        value: 3004
       - key: JWT_SECRET
         generateValue: true
+      - key: DB_HOST
+        fromDatabase:
+          name: evolaine-db
+          property: hostname
+      - key: DB_PORT
+        fromDatabase:
+          name: evolaine-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: evolaine-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: evolaine-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: evolaine-db
+          property: password
+    healthCheckPath: /api/health
+    plan: free  # Ou 'starter' pour les environnements de production
+
+# Configuration pour la base de données PostgreSQL
+databases:
+  - name: evolaine-db
+    databaseName: evolaine
+    user: evolaine_user
+    plan: free  # Choisissez un plan adapté à vos besoins (free, starter, standard, etc.)
+    region: frankfurt  # Même région que le service web

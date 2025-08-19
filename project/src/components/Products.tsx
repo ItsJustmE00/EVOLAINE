@@ -1,52 +1,98 @@
+// @ts-nocheck
 import { Star, Heart, ShoppingCart } from 'lucide-react';
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { products } from '../data/products';
 import { useCart } from '../contexts/CartContext';
 import { useProductSelection } from '../contexts/ProductSelectionContext';
 import { Product } from '../types/product';
+import { useNotification } from './ui/Notification';
 
-// Fonction utilitaire pour gérer les traductions avec fallback
-const useProductTranslation = () => {
-  const { t } = useTranslation();
-  
-  const translate = (productId: number, key: string, defaultValue: string): string => {
-    try {
-      const translation = t(`products.items.${productId}.${key}`, { defaultValue });
-      return translation === `products.items.${productId}.${key}` ? defaultValue : translation;
-    } catch (error) {
-      console.error('Erreur lors de la traduction:', error);
-      return defaultValue;
-    }
+// Types pour la configuration des cartes de produits
+type ProductCardConfig = {
+  container: {
+    columns: {
+      default: number;
+      md: number;
+      lg: number;
+      xl: number;
+    };
+    gap: string;
+    paddingY: string;
+    paddingX: string;
   };
-
-  return { translate };
+  card: {
+    borderRadius: string;
+    shadow: string;
+    hoverShadow: string;
+    transition: string;
+    height: string;
+    backgroundColor: string;
+    transform: string;
+    transformHover: string;
+  };
+  image: {
+    height: string;
+    objectFit: 'cover' | 'contain' | 'fill' | 'none' | 'scale-down';
+    transition: string;
+    transform: string;
+    transformHover: string;
+  };
+  content: {
+    padding: string;
+    flexDirection: 'column' | 'row';
+    alignItems: 'stretch' | 'flex-start' | 'flex-end' | 'center' | 'baseline';
+  };
+  title: {
+    size: string;
+    marginBottom: string;
+  };
+  price: {
+    color: string;
+  };
+  button: {
+    background: string;
+    padding: string;
+    borderRadius: string;
+    fontSize: string;
+    fontWeight: string;
+    transition: string;
+    opacity: number;
+    iconSize: string;
+  };
+  rating: {
+    activeColor: string;
+    inactiveColor: string;
+    size: string;
+  };
 };
 
 
 // Configuration des cartes de produits - Modifiez ces valeurs selon vos besoins
-const productCardConfig = {
+const productCardConfig: ProductCardConfig = {
   // Style du conteneur principal
   container: {
     columns: {
       default: 1,    // Colonnes par défaut (mobile)
       md: 2,         // Colonnes sur écran moyen
-      lg: 3          // Colonnes sur grand écran
+      lg: 3,         // Colonnes sur écran large
+      xl: 4          // Colonnes sur très grand écran
     },
-    gap: '3rem',  // Espacement entre les cartes
-    paddingY: '5rem' // Espacement vertical de la section
+    gap: '1.5rem',   // Espacement réduit entre les cartes
+    paddingY: '2rem', // Espacement vertical réduit
+    paddingX: '0.75rem'  // Padding horizontal réduit sur mobile
   },
   
   // Style de la carte
   card: {
-    borderRadius: '1rem',        // Rayon des coins
-    shadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
-    hoverShadow: '0 25px 50px -12px rgb(0 0 0 / 0.25)',
-    transition: 'all 0.3s ease', // Animation de transition
+    borderRadius: '0.75rem',     // Rayon des coins réduit
+    shadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+    hoverShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)',
+    transition: 'all 0.2s ease', // Animation plus rapide
     height: '100%',             // Hauteur de la carte
     backgroundColor: 'white',    // Couleur de fond
     transform: 'translateY(0)',
-    transformHover: 'translateY(-0.5rem)'
+    transformHover: 'translateY(-0.25rem)'
   } as const,
   
   // Style de l'image
@@ -68,25 +114,12 @@ const productCardConfig = {
   // Style du titre
   title: {
     size: '1.75rem',           // Taille de police augmentée
-    weight: 'bold',            // Épaisseur de la police
-    color: '#111827',          // Couleur du texte
     marginBottom: '1rem'       // Marge inférieure augmentée
-  },
-  
-  // Style de la description
-  description: {
-    color: '#4B5563',          // Couleur du texte
-    lineHeight: '1.625',       // Hauteur de ligne
-    maxLines: 3,               // Nombre maximum de lignes
-    marginBottom: '1.5rem'     // Marge inférieure
   },
   
   // Style du prix
   price: {
-    size: '1.875rem',          // Taille de police
-    weight: 'bold',            // Épaisseur de la police
-    color: '#DB2777',          // Couleur du texte (rose)
-    direction: 'ltr'           // Force la direction de gauche à droite pour le prix
+    color: '#DB2777'          // Couleur du texte (rose)
   },
   
   // Style du bouton
@@ -98,9 +131,7 @@ const productCardConfig = {
     transition: 'all 0.2s',    // Animation de transition
     background: 'linear-gradient(to right, #DB2777, #F43F5E)',
     opacity: 1,
-    hoverOpacity: 0.9,         // Opacité au survol
-    iconSize: '1.5rem',        // Taille de l'icône
-    hoverShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)'
+    iconSize: '1.5rem'        // Taille de l'icône
   } as const,
   
   // Style du badge "En stock"
@@ -125,25 +156,38 @@ const Products = () => {
   const { t, i18n } = useTranslation();
   const { addToCart } = useCart();
   const { selectProduct } = useProductSelection();
+  const { addNotification } = useNotification();
   const productsSectionRef = useRef<HTMLDivElement>(null);
   const isRTL = i18n.language === 'ar';
-  const { translate } = useProductTranslation();
   
-  const handleAddToCart = (product: Omit<Product, 'detailImage'> & { detailImage?: string }, e: React.MouseEvent) => {
+  // Fonction de traduction simplifiée
+  const translateProduct = (productId: number, key: string, defaultValue: string): string => {
+    try {
+      const translation = (t as any)(`products.items.${productId}.${key}`, { defaultValue });
+      return translation === `products.items.${productId}.${key}` ? defaultValue : String(translation);
+    } catch (error) {
+      console.error('Erreur lors de la traduction:', error);
+      return defaultValue;
+    }
+  };
+  
+  const handleAddToCart = (product: Omit<Product, 'detailImage'> & { detailImage?: string }, e: MouseEvent) => {
     e.stopPropagation();
     const productWithQuantity = { 
       ...product, 
       quantity: 1,
-      // S'assurer que detailImage est défini même s'il est manquant
       detailImage: product.detailImage || product.image
     };
+    
+    // Afficher la notification
+    addNotification(t('product.addedToCart', 'Produit ajouté au panier !'));
     addToCart(productWithQuantity);
   };
   
   const handleViewDetails = (productId: number, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const targetUrl = `/produit/${productId}`;
+    const targetUrl = `/product/${productId}`;
     
     // Vérifier si la navigation est déjà en cours
     if (window.location.pathname === targetUrl) {
@@ -237,10 +281,11 @@ const Products = () => {
 
         <div 
           className={`grid 
-            grid-cols-${productCardConfig.container.columns.default} 
-            md:grid-cols-${productCardConfig.container.columns.md} 
-            lg:grid-cols-${productCardConfig.container.columns.lg} 
-            gap-${productCardConfig.container.gap.split('rem')[0]}`}
+            grid-cols-1 
+            md:grid-cols-2 
+            lg:grid-cols-3 
+            xl:grid-cols-4 
+            gap-6 md:gap-4`}
         >
           {products.map((product) => (
             <div
@@ -299,10 +344,10 @@ const Products = () => {
                       lineHeight: '1.3'
                     }}
                   >
-                    {translate(product.id, 'name', product.name)}
+                    {translateProduct(product.id, 'name', product.name)}
                   </h3>
                   <p className="text-gray-600">
-                    {translate(product.id, 'description', product.description)}
+                    {translateProduct(product.id, 'description', product.description)}
                   </p>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-1">

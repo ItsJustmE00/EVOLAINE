@@ -6,7 +6,7 @@ const ScrollingBanner = () => {
   // @ts-ignore - Skip type checking for i18n to prevent deep instantiation
   const { i18n } = useTranslation();
   const isRTL = i18n.language === 'ar';
-  const bannerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Messages avec traductions
   const messages = isRTL ? [
@@ -16,12 +16,12 @@ const ScrollingBanner = () => {
     { id: 3, text: 'خدمة العملاء متاحة 24/7', icon: '💁‍♀️' },
     { id: 4, text: 'منتجات طبيعية 100% للعناية بالبشرة', icon: '🌸' },
     { id: 5, text: 'جلسات عناية بالبشرة مخصصة', icon: '💆‍♀️' },
-    { id: 7, text: 'جمالكِ الطبيعي هويتنا', icon: '✨' },
-    { id: 8, text: 'نصائح تجميلية من خبرائنا', icon: '💅' },
-    { id: 9, text: 'عروض حصرية للعملاء', icon: '🎁' },
-    { id: 10, text: 'هدايا مع كل طلب فوق 500 درهم', icon: '🎀' },
-    { id: 11, text: 'منتجات خالية من المواد الكيميائية', icon: '🌿' },
-    { id: 12, text: 'عناية شاملة بجمالكِ', icon: '💝' },
+    { id: 6, text: 'جمالكِ الطبيعي هويتنا', icon: '✨' },
+    { id: 7, text: 'نصائح تجميلية من خبرائنا', icon: '💅' },
+    { id: 8, text: 'عروض حصرية للعملاء', icon: '🎁' },
+    { id: 9, text: 'هدايا مع كل طلب فوق 500 درهم', icon: '🎀' },
+    { id: 10, text: 'منتجات خالية من المواد الكيميائية', icon: '🌿' },
+    { id: 11, text: 'عناية شاملة بجمالكِ', icon: '💝' },
   ] : [
     // Messages en français avec emojis féminins
     { id: 1, text: 'Livraison gratuite à Agadir', icon: '🚚' },
@@ -36,61 +36,70 @@ const ScrollingBanner = () => {
     { id: 10, text: 'Cadeaux offerts dès 500 Dhs', icon: '🎀' },
   ];
 
-  // Dupliquer les messages pour créer une boucle fluide
-  const allMessages = [...messages, ...messages, ...messages, ...messages];
+  // Créer un grand nombre de répétitions pour un défilement fluide
+  const repeatCount = 10; // Nombre élevé pour assurer la continuité
+  const allMessages = Array(repeatCount).fill(messages).flat();
 
-  useEffect(() => {
-    const banner = bannerRef.current;
-    if (!banner) return;
-
-    const content = banner.querySelector('.scrolling-content') as HTMLElement;
-    if (!content) return;
-
-    let position = 0;
-    const speed = 1;
-    let animationId: number;
-
-    const animate = () => {
-      position -= speed;
-      
-      // Réinitialiser la position quand on arrive à la fin
-      if (position <= -content.scrollWidth / 2) {
-        position = 0;
+  // Styles CSS en ligne pour l'animation
+  const styles = `
+    @keyframes scroll {
+      0% {
+        transform: translateX(0);
+      }
+      100% {
+        transform: translateX(${isRTL ? '50%' : '-50%'});
+      }
+    }
+    
+    .scrolling-banner {
+      overflow: hidden;
+      white-space: nowrap;
+      position: relative;
+      width: 100%;
+    }
+    
+    .scrolling-content {
+      display: inline-block;
+      white-space: nowrap;
+      animation: scroll ${messages.length * 20}s linear infinite;
+      will-change: transform;
+    }
+    
+    .scrolling-content:hover {
+      animation-play-state: running;
+    }
+    
+    .scrolling-item {
+      display: inline-flex;
+      align-items: center;
+      padding: 0 2rem;
+    }
+    
+    @media (max-width: 640px) {
+      .scrolling-content {
+        animation-duration: ${messages.length * 15}s;
       }
       
-      content.style.transform = `translateX(${position}px)`;
-      animationId = requestAnimationFrame(animate);
-    };
-
-    animationId = requestAnimationFrame(animate);
-
-    return () => {
-      cancelAnimationFrame(animationId);
-    };
-  }, [i18n.language]);
+      .scrolling-item {
+        padding: 0 1.25rem;
+      }
+    }
+  `;
 
   return (
     <div 
-      ref={bannerRef}
-      className="bg-gradient-to-r from-pink-500 to-rose-200 to-purple-200 py-2 overflow-hidden w-full"
+      ref={containerRef} 
+      className="bg-gradient-to-r from-[#1B0638] to-[#120421] text-white text-xs sm:text-sm font-medium py-1"
+      style={{ direction: isRTL ? 'rtl' : 'ltr' }}
     >
-      <div className="relative h-8 w-full">
-        <div 
-          className="scrolling-content flex items-center absolute top-0 left-0"
-          style={{ 
-            direction: isRTL ? 'rtl' : 'ltr',
-            whiteSpace: 'nowrap',
-            willChange: 'transform',
-          }}
-        >
-          {allMessages.map((item, index) => (
-            <div 
-              key={`${item.id}-${index}`} 
-              className="inline-flex items-center px-6"
-            >
-              <span className="mx-2">{item.icon}</span>
-              <span className="text-sm font-medium">{item.text}</span>
-            </div>
+      <style>{styles}</style>
+      <div className="scrolling-banner">
+        <div className="scrolling-content">
+          {allMessages.map((message, index) => (
+            <span key={`${message.id}-${index}`} className="scrolling-item">
+              <span className="mr-1 sm:mr-2 text-sm">{message.icon}</span>
+              {message.text}
+            </span>
           ))}
         </div>
       </div>

@@ -21,6 +21,7 @@ type HeaderProps = {
 const Header: React.FC<HeaderProps> = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { itemCount } = useCart();
+  // @ts-ignore - Désactive temporairement la vérification de type pour résoudre l'erreur d'instanciation profonde
   const { t, i18n } = useTranslation();
   const currentLanguage = i18n.language;
   const menuRef = useRef<HTMLDivElement>(null);
@@ -40,10 +41,12 @@ const Header: React.FC<HeaderProps> = () => {
   }, []);
 
   // Fonction d'aide pour les traductions avec des clés de navigation
-  const tNav = (key: string) => t(key as any);
+  // @ts-ignore - Désactive la vérification de type pour éviter l'erreur d'instanciation profonde
+  const tNav = (key: string) => t(key);
   
   // Fonction d'aide pour les traductions communes
-  const tCommon = (key: string) => t(key as any);
+  // @ts-ignore - Désactive la vérification de type pour éviter l'erreur d'instanciation profonde
+  const tCommon = (key: string) => t(key);
   const location = useLocation();
   
   // Fonction pour faire défiler jusqu'à un élément avec un petit offset
@@ -90,25 +93,34 @@ const Header: React.FC<HeaderProps> = () => {
   }, [location.pathname]);
 
   return (
-    <header ref={menuRef} className="fixed w-full top-0 z-50">
+    <header ref={menuRef} className="fixed w-full top-0 z-50 mt-0">
       {/* Bannière défilante */}
       <ScrollingBanner />
       
       {/* Barre de navigation principale */}
       <div className="bg-gradient-to-r from-yellow-100 via-rose-400 to-rose-400 hover:from-rose-300 hover:via-rose-300 hover:to-rose-300 transition-all duration-500 w-full shadow-lg" role="banner">
-      <div className="container mx-auto px-2 py-3">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 py-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2 pl-4">
+          <div className="flex items-center">
+            {/* Bouton de menu mobile */}
+            <button 
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="md:hidden p-1 text-pink-600 hover:text-white focus:outline-none"
+              aria-label={isMenuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+            >
+              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
             <a 
               href="/" 
               onClick={(e) => handleNavigation(e)}
-              className="text-3xl font-bold text-pink-600 hover:text-rose-100 transition-colors text-xl font-semibold uppercase tracking-wider cursor-pointer"
+              className="text-lg sm:text-2xl font-bold text-pink-600 hover:text-rose-100 transition-colors font-semibold uppercase tracking-wider cursor-pointer ml-1 sm:ml-3"
             >
               EVOLAINE<span className="text-xs align-super">®</span>
             </a>
           </div>
 
-          <nav className={`hidden md:flex items-center ${i18n.language === 'ar' ? 'gap-8' : 'space-x-8'}`}>
+          {/* Menu de navigation principal - Desktop */}
+          <nav className={`hidden md:flex items-center ${i18n.language === 'ar' ? 'gap-4' : 'space-x-4'} lg:space-x-6`}>
             <a 
               href="/"
               onClick={(e) => handleNavigation(e)}
@@ -144,7 +156,7 @@ const Header: React.FC<HeaderProps> = () => {
             </Link>
           </nav>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             {/* Sélecteur de langue */}
             <div className="relative group">
               <button 
@@ -197,29 +209,29 @@ const Header: React.FC<HeaderProps> = () => {
             </div>
             
             {/* Bouton panier */}
-            <Link 
-              to="/panier"
-              onClick={(e) => {
-                e.preventDefault();
-                // Forcer un rechargement complet pour s'assurer que la navigation fonctionne
-                window.location.href = '/panier';
-              }}
-              className="relative p-2 text-white hover:text-black transition-colors font-medium text-sm uppercase tracking-wider"
-              aria-label={tNav('navigation.cart')}
-            >
-              <ShoppingBag className="h-5 w-5" />
-              <span className="absolute -top-1 -right-1 bg-pink-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                {itemCount || 0}
-              </span>
-            </Link>
-            <button
-              className="md:hidden p-2 text-white hover:text-black transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-rose-400 rounded-md"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              aria-label={isMenuOpen ? tCommon('common.close_menu') : tCommon('common.open_menu')}
-            >
-              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-              <span className="sr-only">{tNav('navigation.cart')}</span>
-            </button>
+            <div className="relative">
+              <button 
+                onClick={() => {
+                  // Si on est déjà sur la page du panier, on recharge la page
+                  if (location.pathname === '/cart') {
+                    window.location.reload();
+                  } else {
+                    // Sinon, on navigue normalement
+                    window.location.href = '/cart';
+                  }
+                }}
+                className="text-white hover:text-black transition-colors p-1 sm:p-2 relative flex items-center" 
+                aria-label="Panier"
+              >
+                <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6" />
+                {itemCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-pink-600 text-white text-xs font-bold rounded-full h-5 w-5 sm:h-6 sm:w-6 flex items-center justify-center transform scale-110">
+                    {itemCount}
+                  </span>
+                )}
+              </button>
+            </div>
+
           </div>
         </div>
 
@@ -261,14 +273,15 @@ const Header: React.FC<HeaderProps> = () => {
               >
                 {tNav('navigation.contact')}
               </Link>
+              
+
             </nav>
           </div>
         )}
       </div>
     </div>
-    </header>
+  </header>
   );
 };
-
 
 export default Header;

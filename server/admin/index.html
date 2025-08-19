@@ -15,6 +15,80 @@
         .status-cancelled { background-color: #fee2e2; color: #991b1b; }
         .status-unread { font-weight: bold; }
         .status-read { color: #6b7280; }
+        
+        /* Styles pour les notifications */
+        .notification {
+            padding: 12px 20px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            animation: slideIn 0.3s ease-out;
+            max-width: 350px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .notification::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            background-color: rgba(255, 255, 255, 0.5);
+            animation: progress 5s linear forwards;
+        }
+        
+        .notification.info {
+            background-color: #3b82f6; /* blue-500 */
+        }
+        
+        .notification.success {
+            background-color: #10b981; /* emerald-500 */
+        }
+        
+        .notification.warning {
+            background-color: #f59e0b; /* amber-500 */
+        }
+        
+        .notification.error {
+            background-color: #ef4444; /* red-500 */
+        }
+        
+        .notification.fade-out {
+            animation: fadeOut 0.5s ease-out forwards;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes fadeOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+        
+        @keyframes progress {
+            from {
+                width: 100%;
+            }
+            to {
+                width: 0%;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -233,6 +307,7 @@
         </div>
     </div>
 
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="admin.js"></script>
 </body>
 </html>

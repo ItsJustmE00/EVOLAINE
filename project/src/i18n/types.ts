@@ -116,6 +116,83 @@ export interface TestimonialsTranslations {
   items: TestimonialItem[];
 }
 
+export interface CartEmptyTranslations {
+  title: string;
+  message: string;
+  browseProducts: string;
+}
+
+export interface CartFormTranslations {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  address: string;
+  notesOptional: string;
+  notesPlaceholder: string;
+  processing: string;
+  submit: string;
+}
+
+export interface CartSuccessTranslations {
+  title: string;
+  message: string;
+  backHome: string;
+}
+
+export interface CartTranslations {
+  title: string;
+  yourCart: string;
+  subtotal: string;
+  shipping: string;
+  shippingNotice: string;
+  total: string;
+  remove: string;
+  continueShopping: string;
+  checkout: string;
+  quantity: string;
+  close: string;
+  closeCart: string;
+  price: string;
+  decreaseQuantity: string;
+  increaseQuantity: string;
+  noCategory: string;
+  itemAdded: string;
+  itemRemoved: string;
+  updateQuantity: string;
+  addItems: string;
+  summary: string;
+  item: string;
+  items: string;
+  emptyCart: CartEmptyTranslations;
+  success: CartSuccessTranslations;
+  form: CartFormTranslations;
+  orderNumber: string;
+}
+
+export interface CheckoutTranslations {
+  title: string;
+  deliveryInfo: string;
+  contactInfo: string;
+  paymentMethod: string;
+  orderSummary: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string;
+  address: string;
+  city: string;
+  postalCode: string;
+  country: string;
+  notes: string;
+  submit: string;
+  submitting: string;
+  success: string;
+  error: string;
+  requiredField: string;
+  invalidEmail: string;
+  invalidPhone: string;
+}
+
 export interface Translations {
   hero: HeroTranslations;
   welcome: string;
@@ -135,6 +212,7 @@ export interface Translations {
   testimonials: TestimonialsTranslations;
   about: any; // À typer plus précisément si nécessaire
   contact: any; // À typer plus précisément si nécessaire
-  cart: any; // À typer plus précisément si nécessaire
+  cart: CartTranslations;
+  checkout: CheckoutTranslations;
   footer: any; // À typer plus précisément si nécessaire
 }

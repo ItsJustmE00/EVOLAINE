@@ -1,10 +1,20 @@
 @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Playpen+Sans+Arabic:wght@400;500;600;700&display=swap');
 
+/* Désactive les avertissements pour les directives Tailwind */
 /* stylelint-disable */
+/* css-skip */
 @tailwind base;
+/* css-skip */
 @tailwind components;
+/* css-skip */
 @tailwind utilities;
 /* stylelint-enable */
+
+/* Réinitialisation des marges par défaut */
+html, body {
+  margin: 0;
+  padding: 0;
+}
 
 /* Styles de base pour le mode RTL */
 [dir='rtl'] {
@@ -44,9 +54,69 @@
 /* Correction pour les marges automatiques en RTL */
 [dir="rtl"] .rtl\:ml-auto {
   margin-right: auto;
-  margin-left: 0;
 }
 
+/* Animations pour la modale du panier */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { 
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to { 
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slideIn {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Style pour le corps quand une modale est ouverte */
+body.modal-open {
+  overflow: hidden;
+  padding-right: 15px; /* Pour éviter le saut de contenu lors de l'ouverture de la modale */
+}
+
+/* Animations pour les notifications */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.3s ease-out forwards;
+}
+
+.animate-fade-out {
+  animation: fadeOut 0.3s ease-in forwards;
+}
 [dir="rtl"] .rtl\:mr-auto {
   margin-left: auto;
   margin-right: 0;

@@ -61,15 +61,31 @@
   },
   "cart": {
     "title": "Votre Panier",
+    "yourCart": "Votre Panier",
     "summary": "Récapitulatif de la commande",
     "subtotal": "Sous-total",
     "total": "Total",
     "item": "article",
     "items": "articles",
+    "remove": "Supprimer",
+    "checkout": "Passer la commande",
+    "continueShopping": "Continuer mes achats",
+    "close": "Fermer",
+    "decreaseQuantity": "Diminuer la quantité",
+    "increaseQuantity": "Augmenter la quantité",
+    "addItemsPrompt": "Découvrez nos produits et faites vos premiers achats !",
+    "startShopping": "Commencer mes achats",
+    "needHelp": "Besoin d'aide ?",
+    "contactUs": "Contactez-nous",
     "empty": {
       "title": "Votre panier est vide",
       "message": "Parcourez nos produits et ajoutez des articles à votre panier.",
       "browseProducts": "Voir les produits"
+    },
+    "success": {
+      "title": "Commande confirmée !",
+      "message": "Merci pour votre commande. Nous vous contacterons bientôt pour confirmer les détails.",
+      "continue": "Continuer mes achats"
     },
     "form": {
       "title": "Détails de livraison",

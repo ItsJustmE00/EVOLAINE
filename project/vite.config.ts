@@ -21,21 +21,22 @@ export default defineConfig({
     // Cette configuration permet de rediriger toutes les requêtes vers index.html
     // pour permettre le routage côté client avec React Router
     proxy: {
-      // Laisser passer les requêtes API vers le serveur backend
+      // Redirection des requêtes API vers le serveur backend sur le port 3004
       '/api': {
-        target: 'https://evolaine-backend.onrender.com',
+        target: 'http://localhost:3004',
         changeOrigin: true,
         secure: false,
         rewrite: (path: string) => path,
         configure: (proxy: any) => {
           proxy.on('error', (err: Error) => {
-            console.log('Erreur du proxy:', err);
+            console.error('Erreur du proxy:', err);
           });
-          proxy.on('proxyReq', (_: any, req: any) => {
-            console.log('Requête proxy vers:', req.method, req.url);
-          });
-          proxy.on('proxyRes', (proxyRes: any, req: any) => {
-            console.log('Réponse du serveur:', req.method, req.url, proxyRes.statusCode);
+          proxy.on('proxyReq', (proxyReq: any) => {
+            console.log('Requête proxy vers:', proxyReq.method, proxyReq.path);
+            // Forcer les en-têtes pour éviter les problèmes CORS
+            proxyReq.setHeader('host', 'localhost:3004');
+            proxyReq.setHeader('origin', 'http://localhost:3000');
+            proxyReq.setHeader('referer', 'http://localhost:3000');
           });
         }
       }
