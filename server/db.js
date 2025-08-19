@@ -1,27 +1,25 @@
 const { Pool } = require('pg');
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 console.log('\n🔌 CHARGEMENT DE LA CONFIGURATION DE LA BASE DE DONNÉES');
 console.log('================================================');
 
-// Importer la configuration depuis server.js
-const { config } = require('./server');
-
 console.log('🔧 CONFIGURATION DE LA CONNEXION À LA BASE DE DONNÉES');
-console.log('Environnement:', config.NODE_ENV);
-console.log('Hôte de la base de données:', config.DB_HOST);
-console.log('Nom de la base de données:', config.DB_NAME);
-console.log('Utilisateur de la base de données:', config.DB_USER);
+console.log('Environnement:', process.env.NODE_ENV || 'development');
+console.log('Hôte de la base de données:', process.env.DB_HOST);
+console.log('Nom de la base de données:', process.env.DB_NAME);
+console.log('Utilisateur de la base de données:', process.env.DB_USER);
 
 // Configuration de la connexion à la base de données
 const dbConfig = {
-  user: config.DB_USER,
-  host: config.DB_HOST,
-  database: config.DB_NAME,
-  password: config.DB_PASSWORD,
-  port: parseInt(config.DB_PORT || '5432', 10),
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
+  port: parseInt(process.env.DB_PORT || '5432', 10),
   // Configuration SSL pour la production
-  ssl: config.NODE_ENV === 'production' ? { 
+  ssl: process.env.NODE_ENV === 'production' ? { 
     rejectUnauthorized: false,
     sslmode: 'require'
   } : false,
