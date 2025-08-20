@@ -1742,11 +1742,11 @@ app.post('/api/contact', async (req, res) => {
   
   try {
     console.log('Tentative d\'insertion dans la base de données...');
-    console.log('Requête SQL:', 'INSERT INTO messages (full_name, phone, subject, message) VALUES ($1, $2, $3, $4) RETURNING id');
+    console.log('Requête SQL:', 'INSERT INTO messages (name, full_name, phone, subject, message) VALUES ($1, $1, $2, $3, $4) RETURNING id');
     console.log('Paramètres:', [fullName, phone, subject, message]);
     
     const result = await pool.query(
-      'INSERT INTO messages (full_name, phone, subject, message) VALUES ($1, $2, $3, $4) RETURNING id',
+      'INSERT INTO messages (name, full_name, phone, subject, message) VALUES ($1, $1, $2, $3, $4) RETURNING id',
       [fullName, phone, subject, message]
     );
     
