@@ -1273,6 +1273,50 @@ async function loadOrders() {
     }
 }
 
+// Afficher la liste des messages dans le tableau
+if (typeof window.displayMessages === 'undefined') {
+  function displayMessages(messages) {
+    const container = document.getElementById('messages-list');
+    if (!container) return;
+    if (!Array.isArray(messages) || messages.length === 0) {
+      container.innerHTML = '<p class="text-gray-500">Aucun message trouvé.</p>';
+      return;
+    }
+
+    const rows = messages.map(msg => {
+      const statusClass = msg.is_read ? 'status-read' : 'status-unread';
+      const senderName = msg.full_name || msg.name || msg.email || 'Sans nom';
+      const created = new Date(msg.created_at).toLocaleString('fr-FR');
+      return `
+        <tr class="border-b hover:bg-gray-50 ${statusClass}">
+          <td class="px-4 py-2 whitespace-nowrap">${msg.id}</td>
+          <td class="px-4 py-2">${senderName}</td>
+          <td class="px-4 py-2">${created}</td>
+          <td class="px-4 py-2 text-right">
+            <button class="text-indigo-600 hover:text-indigo-900 mr-2" onclick="viewMessage(${msg.id})"><i class="fas fa-eye"></i></button>
+            <button class="text-red-600 hover:text-red-900" onclick="deleteMessage(${msg.id})"><i class="fas fa-trash"></i></button>
+          </td>
+        </tr>`;
+    }).join('');
+
+    container.innerHTML = `
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expéditeur</th>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+            <th class="px-4 py-2"></th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          ${rows}
+        </tbody>
+      </table>`;
+  }
+  window.displayMessages = displayMessages;
+}
+
 // Charger les messages depuis l'API
 async function loadMessages() {
     try {
