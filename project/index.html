@@ -2,7 +2,7 @@
 <html lang="fr" class="h-full">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/image/logo.png" />
+    <link rel="icon" type="image/png" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="description" content="EVOLAINE - Découvrez nos soins de beauté naturels et authentiques inspirés des traditions marocaines. Des produits 100% naturels pour une beauté éclatante." />
     <meta name="theme-color" content="#ffffff" />
@@ -31,10 +31,9 @@
     <!-- Préchargement des polices -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
-    
-    <!-- Préchargement des ressources critiques -->
-    <link rel="preload" href="/src/main.tsx" as="script" />
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" media="print" onload="this.media='all'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" /></noscript>
   </head>
   <body class="h-full bg-white text-gray-900 antialiased">
     <div id="root"></div>
