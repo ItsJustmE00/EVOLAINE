@@ -144,8 +144,21 @@ async function testConnection() {
   }
 }
 
+// Vérifier le schéma (ajouter la colonne full_name si elle n'existe pas encore)
+async function ensureSchema() {
+  try {
+    console.log('\n🔧 Vérification du schéma de la base de données (table messages)...');
+    await pool.query(`ALTER TABLE IF EXISTS messages ADD COLUMN IF NOT EXISTS full_name VARCHAR(255);`);
+    console.log('✅ Schéma vérifié / colonne full_name OK');
+  } catch (err) {
+    console.error('❌ Erreur lors de la vérification/ajout de la colonne full_name:', err.message);
+  }
+}
+
 // Exécuter le test de connexion
-testConnection().catch(err => {
+testConnection()
+  .then(ensureSchema)
+  .catch(err => {
   console.error('❌ Erreur lors du test de connexion:', err);
   process.exit(1);
 });
