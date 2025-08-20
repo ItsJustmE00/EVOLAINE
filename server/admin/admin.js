@@ -4,7 +4,39 @@ let currentMessageId = null;
 
 // Configuration de l'URL de l'API
 const API_BASE_URL = 'https://evolaine-backend.onrender.com';
-const API_URL = API_BASE_URL; // La base de l'URL, car les routes commencent déjà par /api
+const API_URL = API_BASE_URL;
+
+// === Auth ===
+async function ensureAdminAuth() {
+  if (sessionStorage.getItem('isAdmin') === '1') return;
+  let proceed = false;
+  while (!proceed) {
+    const username = prompt('Nom d\'utilisateur admin:');
+    if (username === null) return; // user cancelled
+    const password = prompt('Mot de passe:');
+    if (password === null) return;
+    try {
+      const res = await fetch(`${API_URL}/api/admin/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        sessionStorage.setItem('isAdmin', '1');
+        proceed = true;
+        alert('Connecté!');
+      } else {
+        alert(data.error || 'Échec de la connexion');
+      }
+    } catch (err) {
+      alert('Erreur réseau');
+    }
+  }
+}
+
+// Exécuter l'auth avant le reste
+await ensureAdminAuth(); // La base de l'URL, car les routes commencent déjà par /api
 
 // Configuration de la connexion WebSocket
 console.log('🚀 Initialisation de la connexion WebSocket...');
