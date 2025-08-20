@@ -6,7 +6,7 @@ const About: React.FC = () => {
   const { t } = useTranslation();
 
   return (
-    <section className="py-10 md:py-20 bg-gradient-to-b from-rose-50 to-pink-50">
+    <section id="a-propos" className="py-10 md:py-20 bg-gradient-to-b from-rose-50 to-pink-50">
       <div className="container mx-auto px-4 lg:px-8">
         <div className="flex flex-col lg:flex-row gap-12 items-center">
           {/* Colonne de gauche - Contenu principal */}
