@@ -1181,13 +1181,15 @@ if (typeof window !== 'undefined') {
   window.deleteOrder = deleteOrder;
   window.updateOrderStatus = updateOrderStatus;
   window.displayOrders = displayOrders;
+  window.filterAndDisplayOrders = filterAndDisplayOrders;
+  window.loadOrders = loadOrders;
   window.viewOrder = viewOrder;
 }
 
 // Fonctions pour la gestion des commandes
-let allOrders = [];
-let currentFilter = 'all';
-let currentSearchTerm = '';
+var allOrders = [];
+var currentFilter = 'all';
+var currentSearchTerm = '';
 
 // Fonction appelée par la modal pour mettre à jour le statut sélectionné
 function updateSelectedOrderStatus() {
