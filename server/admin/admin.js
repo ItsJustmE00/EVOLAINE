@@ -1176,6 +1176,13 @@ async function deleteOrder(orderId) {
   }
 }
 
+// Rendre les fonctions accessibles aux attributs HTML inline
+if (typeof window !== 'undefined') {
+  window.deleteOrder = deleteOrder;
+  window.updateOrderStatus = updateOrderStatus;
+  window.viewOrder = viewOrder;
+}
+
 // Fonctions pour la gestion des commandes
 let allOrders = [];
 let currentFilter = 'all';
