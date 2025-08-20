@@ -1127,7 +1127,19 @@ let currentSearchTerm = '';
 function updateSelectedOrderStatus() {
     const select = document.getElementById('order-status');
     if (!select) return;
-    const newStatus = select.value;
+    const frStatus = select.value;
+    // Mapping français -> valeurs API
+    const statusMap = {
+        'Nouvelle': 'pending',
+        'En cours': 'processing',
+        'Terminée': 'completed',
+        'Annulée': 'cancelled'
+    };
+    const newStatus = statusMap[frStatus];
+    if (!newStatus) {
+        alert('Statut non reconnu');
+        return;
+    }
     if (!currentOrderId) {
         alert('ID de la commande introuvable');
         return;
