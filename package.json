@@ -1,0 +1,17 @@
+{
+  "name": "evolaine",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node vercel-build.js",
+    "dev": "cd project && npm run dev",
+    "start": "node server/server.js",
+    "vercel-build": "node vercel-build.js"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "dependencies": {
+    "@vercel/node": "^4.0.0"
+  }
+}

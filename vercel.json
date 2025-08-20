@@ -2,14 +2,15 @@
   "version": 2,
   "builds": [
     {
-      "src": "package.json",
+      "src": "project/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "dist"
+        "distDir": "dist",
+        "outputDirectory": "dist"
       }
     },
     {
-      "src": "../server/server.js",
+      "src": "server/server.js",
       "use": "@vercel/node"
     }
   ],
@@ -20,27 +21,29 @@
     },
     {
       "src": "/admin",
-      "dest": "/dist/admin/index.html"
+      "dest": "/project/dist/admin/index.html"
     },
     {
       "src": "/admin/(.*)",
-      "dest": "/dist/admin/index.html"
+      "dest": "/project/dist/admin/index.html"
     },
     {
       "src": "/static/(.*)",
-      "dest": "/dist/static/$1"
+      "dest": "/project/dist/static/$1"
     },
     {
       "src": "/assets/(.*)",
-      "dest": "/dist/assets/$1"
+      "dest": "/project/dist/assets/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "/dist/index.html"
+      "dest": "/project/dist/index.html"
     }
   ],
   "env": {
     "NODE_ENV": "production",
     "VITE_API_BASE_URL": "https://evolaine-backend.onrender.com"
-  }
+  },
+  "buildCommand": "cd project && npm install && npm run build",
+  "outputDirectory": "project/dist"
 }

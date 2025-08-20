@@ -3,6 +3,14 @@ node_modules/
 /.pnp
 .pnp.js
 
+# Build output
+.project/dist
+.project/.vercel
+.vercel
+.vercel_build_output
+.next
+out
+
 # Environment variables
 .env
 .env.local
@@ -16,6 +24,15 @@ logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
 # Runtime data
 pids

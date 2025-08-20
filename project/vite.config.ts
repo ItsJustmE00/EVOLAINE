@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 
 // Configuration pour le mode développement et production
 const isDevelopment = process.env.NODE_ENV === 'development';
+const isProduction = process.env.NODE_ENV === 'production';
 const apiUrl = isDevelopment 
   ? 'http://localhost:3004' 
   : 'https://evolaine-backend.onrender.com';
@@ -11,7 +12,7 @@ const apiUrl = isDevelopment
 export default defineConfig({
   plugins: [react()],
   // Configuration de base pour les chemins d'accès
-  base: '/',
+  base: isProduction ? '/' : '/',
   // Configuration du serveur de développement
   server: {
     port: 3000,
