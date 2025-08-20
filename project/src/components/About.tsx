@@ -1,95 +1,77 @@
-import { Leaf, Award, Users, MapPin } from 'lucide-react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { Leaf, Award, Users, MapPin } from 'lucide-react';
 
-const About = () => {
+const About: React.FC = () => {
   const { t } = useTranslation();
-  
+
   return (
-    <section id="a-propos" className="py-20 bg-gradient-to-b from-rose-50 to-pink-50">
+    <section className="py-20 bg-gradient-to-b from-rose-50 to-pink-50">
       <div className="container mx-auto px-4 lg:px-8">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
-          <div className="space-y-8">
-            <div className="text-center">
-              <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
+        <div className="flex flex-col lg:flex-row gap-12 items-center">
+          {/* Colonne de gauche - Contenu principal */}
+          <div className="lg:w-1/2 flex flex-col items-center lg:items-start">
+            <div className="text-center lg:text-left mb-12 max-w-2xl">
+              <h1 className="text-4xl md:text-5xl font-bold text-pink-900">
                 <span className="block">{t('about.title.line1')}</span>
-                <span className="text-pink-600 block">{t('about.title.line2')}</span>
-              </h2>
-              <p className="text-lg text-gray-600 leading-relaxed mb-6">
-                {t('about.description1')}
-              </p>
-              <p className="text-lg text-gray-600 leading-relaxed">
-                {t('about.description2')}
-              </p>
+                <span className="block text-pink-600">{t('about.title.line2')}</span>
+              </h1>
+              <div className="w-24 h-1 bg-pink-300 mx-auto lg:mx-0 my-6"></div>
+              <div className="text-gray-600">
+                <p className="text-lg mb-6">{t('about.description1')}</p>
+                <p className="text-lg">{t('about.description2')}</p>
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
-              <div className="text-center p-6 bg-white rounded-xl shadow-md">
-                <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Leaf className="h-6 w-6 text-pink-600" />
+            {/* Grille des fonctionnalités */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 w-full">
+                <div className="bg-pink-100 w-16 h-16 rounded-full flex items-center justify-center mb-6 mx-auto lg:mx-0">
+                  <Leaf className="w-8 h-8 text-pink-600" />
                 </div>
-                <h3 className="font-bold text-gray-900 mb-1">
-                  {t('about.features.natural.title')}
-                </h3>
-                <p className="text-sm text-gray-600">
-                  {t('about.features.natural.subtitle')}
-                </p>
+                <h3 className="text-xl font-semibold text-pink-900 mb-3">{t('about.features.natural.title')}</h3>
+                <p className="text-gray-600">{t('about.features.natural.subtitle')}</p>
               </div>
 
-              <div className="text-center p-6 bg-white rounded-xl shadow-md">
-                <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Award className="h-6 w-6 text-pink-600" />
+              <div className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 w-full">
+                <div className="bg-pink-100 w-16 h-16 rounded-full flex items-center justify-center mb-6 mx-auto lg:mx-0">
+                  <Award className="w-8 h-8 text-pink-600" />
                 </div>
-                <h3 className="font-bold text-gray-900 mb-1">
-                  {t('about.features.certified.title')}
-                </h3>
-                <p className="text-sm text-gray-600">
-                  {t('about.features.certified.subtitle')}
-                </p>
+                <h3 className="text-xl font-semibold text-pink-900 mb-3">{t('about.features.certified.title')}</h3>
+                <p className="text-gray-600">{t('about.features.certified.subtitle')}</p>
               </div>
 
-              <div className="text-center p-6 bg-white rounded-xl shadow-md">
-                <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Users className="h-6 w-6 text-pink-600" />
+              <div className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 w-full">
+                <div className="bg-pink-100 w-16 h-16 rounded-full flex items-center justify-center mb-6 mx-auto lg:mx-0">
+                  <Users className="w-8 h-8 text-pink-600" />
                 </div>
-                <h3 className="font-bold text-gray-900 mb-1">
-                  {t('about.features.clients.title')}
-                </h3>
-                <p className="text-sm text-gray-600">
-                  {t('about.features.clients.subtitle')}
-                </p>
+                <h3 className="text-xl font-semibold text-pink-900 mb-3">{t('about.features.clients.title')}</h3>
+                <p className="text-gray-600">{t('about.features.clients.subtitle')}</p>
               </div>
 
-              <div className="text-center p-6 bg-white rounded-xl shadow-md">
-                <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <MapPin className="h-6 w-6 text-pink-600" />
+              <div className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 w-full">
+                <div className="bg-pink-100 w-16 h-16 rounded-full flex items-center justify-center mb-6 mx-auto lg:mx-0">
+                  <MapPin className="w-8 h-8 text-pink-600" />
                 </div>
-                <h3 className="font-bold text-gray-900 mb-1">
-                  {t('about.features.local.title')}
-                </h3>
-                <p className="text-sm text-gray-600">
-                  {t('about.features.local.subtitle')}
-                </p>
+                <h3 className="text-xl font-semibold text-pink-900 mb-3">{t('about.features.local.title')}</h3>
+                <p className="text-gray-600">{t('about.features.local.subtitle')}</p>
               </div>
             </div>
           </div>
-
-          <div className="relative">
-            <div className="aspect-[4/5] rounded-3xl bg-gradient-to-br from-pink-200 to-rose-300 relative overflow-hidden shadow-2xl">
+          
+          {/* Colonne de droite - Vidéo */}
+          <div className="lg:w-1/2">
+            <div className="sticky top-8 rounded-xl overflow-hidden shadow-xl">
               <video 
                 autoPlay 
                 loop 
                 muted 
                 playsInline 
-                className="w-full h-full object-cover"
-                poster="https://images.unsplash.com/photo-1519730722595-a5ff788dea4d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=774&q=80"
+                className="w-full h-auto rounded-xl"
               >
-                <source 
-                  src="/videos/123.mp4" 
-                  type="video/mp4" 
-                />
+                <source src="/videos/123.mp4" type="video/mp4" />
                 Votre navigateur ne supporte pas la lecture de vidéos.
               </video>
-              <div className="absolute inset-0 bg-gradient-to-t from-pink-600/30 to-transparent"></div>
             </div>
           </div>
         </div>

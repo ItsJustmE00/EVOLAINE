@@ -1,18 +1,17 @@
 import 'i18next';
-import type { 
-  Translations, 
-  NavigationTranslations, 
-  CommonTranslations 
-} from './types';
+import { fr } from './translations';
 
 declare module 'i18next' {
   interface CustomTypeOptions {
     defaultNS: 'translation';
     resources: {
-      translation: {
-        navigation: NavigationTranslations;
-        common: CommonTranslations;
-      } & Omit<Translations, 'navigation' | 'common'>;
+      translation: typeof fr;
     };
+  }
+}
+
+declare module 'react-i18next' {
+  interface TFunction {
+    (key: string, options?: any): string;
   }
 }

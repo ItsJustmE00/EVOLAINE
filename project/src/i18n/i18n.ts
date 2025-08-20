@@ -5,12 +5,8 @@ import { fr, ar } from './translations';
 
 // Configuration des ressources de traduction
 const resources = {
-  fr: {
-    translation: fr
-  },
-  ar: {
-    translation: ar
-  }
+  fr: { translation: fr },
+  ar: { translation: ar }
 };
 
 // Configuration d'i18next
@@ -42,9 +38,8 @@ const initI18n = () => {
       useSuspense: true,
     },
     saveMissing: false,
-    missingKeyHandler: (key: string) => {
+    missingKeyHandler: function(_lngs: string[], _ns: string, key: string) {
       console.warn(`Traduction manquante: ${key}`);
-      return key;
     },
     returnObjects: true,
     joinArrays: '\n',
@@ -53,7 +48,7 @@ const initI18n = () => {
   i18n
     .use(LanguageDetector)
     .use(initReactI18next)
-    .init(defaultOptions as any) // Utilisation de 'as any' pour éviter les erreurs de typage
+    .init(defaultOptions as any)
     .catch((err) => {
       console.error('Erreur lors de l\'initialisation de i18n:', err);
     });
@@ -61,66 +56,5 @@ const initI18n = () => {
 
 // Initialisation
 initI18n();
-
-// Export des types pour une meilleure intégration TypeScript
-declare module 'i18next' {
-  interface CustomTypeOptions {
-    resources: {
-      translation: typeof fr & {
-        testimonials: {
-          title: string;
-          subtitle: string;
-          items: Array<{
-            name: string;
-            city: string;
-            comment: string;
-          }>;
-        };
-        contact: {
-          title: string;
-          subtitle: string;
-          infoTitle: string;
-          socialMediaTitle: string;
-          phone: {
-            title: string;
-            number: string;
-            availability: string;
-          };
-          hours: {
-            title: string;
-            weekdays: string;
-            saturday: string;
-          };
-          address: {
-            title: string;
-            line1: string;
-            line2: string;
-          };
-          form: {
-            title: string;
-            firstName: string;
-            firstNamePlaceholder: string;
-            lastName: string;
-            lastNamePlaceholder: string;
-            phone: string;
-            subject: string;
-            message: string;
-            messagePlaceholder: string;
-            submit: string;
-            submitting: string;
-            success: string;
-            error: string;
-            subjects: {
-              product: string;
-              order: string;
-              return: string;
-              other: string;
-            };
-          };
-        };
-      };
-    };
-  }
-}
 
 export default i18n;

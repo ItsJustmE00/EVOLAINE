@@ -1,3 +1,5 @@
+import { AboutTranslations } from './about.types';
+
 export interface TranslationObject {
   [key: string]: string | TranslationObject;
 }
@@ -193,6 +195,51 @@ export interface CheckoutTranslations {
   invalidPhone: string;
 }
 
+
+// Resources type for i18next
+export interface Resources {
+  translation: Translations & {
+    about: AboutTranslations;
+    contact: any; // You might want to properly type this later
+    testimonials: any; // You might want to properly type this later
+  };
+}
+
+// Base translation interface
+export interface BaseTranslations {
+  common: {
+    loading: string;
+    error: string;
+  };
+  about: {
+    title: {
+      line1: string;
+      line2: string;
+    };
+    description1: string;
+    description2: string;
+    features: {
+      natural: {
+        title: string;
+        subtitle: string;
+      };
+      certified: {
+        title: string;
+        subtitle: string;
+      };
+      clients: {
+        title: string;
+        subtitle: string;
+      };
+      local: {
+        title: string;
+        subtitle: string;
+      };
+    };
+  };
+  // Add other sections as needed
+}
+
 export interface Translations {
   hero: HeroTranslations;
   welcome: string;
@@ -210,7 +257,7 @@ export interface Translations {
   productDetail: ProductDetailTranslations;
   products: ProductsTranslations;
   testimonials: TestimonialsTranslations;
-  about: any; // À typer plus précisément si nécessaire
+  about: AboutTranslations; // À typer plus précisément si nécessaire
   contact: any; // À typer plus précisément si nécessaire
   cart: CartTranslations;
   checkout: CheckoutTranslations;
