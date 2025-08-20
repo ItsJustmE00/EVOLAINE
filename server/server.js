@@ -197,53 +197,7 @@ io.on('connection', (socket) => {
   
   socket.on('ping', heartbeat);
   socket.on('pong', heartbeat);
-    console.log('Salles actuelles avant join:', Array.from(socket.rooms));
-    
-    // Rejoindre la room admin
-    socket.join('admin');
-    
-    // Vérifier si le client est bien dans la room
-    const rooms = Array.from(socket.rooms);
-    console.log(`✅ Client ${socket.id} a rejoint la room admin`);
-    console.log('Salles après join:', rooms);
-    
-    // Vérifier si la room admin existe
-    const adminRoom = io.sockets.adapter.rooms.get('admin');
-    console.log('Clients dans la room admin:', adminRoom ? adminRoom.size : 0);
-    
-    // Envoyer un message de bienvenue
-    socket.emit('welcome', {
-      message: 'Bienvenue sur le tableau de bord administrateur',
-      timestamp: new Date().toISOString(),
-      clientId: socket.id
-    });
-    
-    // Envoyer une confirmation au client
-    if (callback) {
-      callback({
-        success: true,
-        message: `Bienvenue dans la room admin`,
-        rooms: rooms,
-        timestamp: new Date().toISOString(),
-        roomSize: adminRoom ? adminRoom.size : 0
-      });
-    }
-    
-    // Tester l'envoi d'un message après un délai
-    setTimeout(() => {
-      console.log(`Envoi d'un message de test à la room admin depuis le serveur...`);
-      io.to('admin').emit('test_message', {
-        message: 'Ceci est un message de test du serveur',
-        timestamp: new Date().toISOString()
-      });
-    }, 2000);
-  });
-  
-  // Écouter les messages de test du client
-  socket.on('test_message', (data) => {
-    console.log('Message de test reçu du client:', data);
-  });
-});
+
 
 // Fonction pour vérifier le token admin
 function verifyAdminToken(token) {
