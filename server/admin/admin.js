@@ -993,7 +993,8 @@ async function viewOrder(orderId) {
             throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
         }
         
-        const order = await response.json();
+        const raw = await response.json();
+        const order = raw && raw.data ? raw.data : raw;
         
         // Créer le contenu de la modal
         const modalContent = `
@@ -1197,6 +1198,18 @@ if (typeof window !== 'undefined') {
 
 
 
+// Affichage des messages (stub minimal pour éviter erreur)
+function displayMessages(messages) {
+    const container = document.getElementById('messages-list');
+    if (!container) return;
+    if (!messages || messages.length === 0) {
+        container.innerHTML = '<p class="p-4 text-gray-500">Aucun message</p>';
+        return;
+    }
+    // TODO: construire la liste des messages
+    container.innerHTML = '<p class="p-4">' + messages.length + ' message(s)</p>';
+}
+
 // Fonctions pour la gestion des commandes
 var allOrders = [];
 var currentFilter = 'all';
@@ -1254,8 +1267,8 @@ function filterAndDisplayOrders() {
             (order.first_name && order.first_name.toLowerCase().includes(searchTerm)) ||
             (order.last_name && order.last_name.toLowerCase().includes(searchTerm)) ||
             (order.phone && order.phone.includes(searchTerm)) ||
-            (order.address && order.address.toLowerCase().includes(searchTerm)) ||
-            (order.city && order.city.toLowerCase().includes(searchTerm));
+            ((order.address || '').toLowerCase().includes(searchTerm)) ||
+            ((order.city || '').toLowerCase().includes(searchTerm));
         
         return statusMatch && searchMatch;
     });
