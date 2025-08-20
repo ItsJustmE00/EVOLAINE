@@ -575,6 +575,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         loadMessages();
     }
 
+    // Afficher par défaut le tableau de bord après chargement
+    if (typeof window.showSection === 'function') {
+        window.showSection('dashboard');
+    }
+
   // Toggle sidebar on mobile
   const btn = document.getElementById('mobile-menu-button');
   if (btn) {
