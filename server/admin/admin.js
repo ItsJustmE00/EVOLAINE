@@ -542,6 +542,20 @@ function formatDate(dateString) {
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM chargé, initialisation de l\'interface');
+
+  // Toggle sidebar on mobile
+  const btn = document.getElementById('mobile-menu-button');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      const sidebar = document.getElementById('sidebar');
+      if (!sidebar) return;
+      const hidden = sidebar.classList.contains('-translate-x-full');
+      sidebar.classList.toggle('-translate-x-full');
+      sidebar.classList.toggle('hidden');
+      console.log('Sidebar toggled', hidden ? 'open' : 'close');
+    });
+  }
+  console.log('');
     
     // Fonction utilitaire pour forcer la mise à jour de l'interface
     const forceUIRefresh = () => {

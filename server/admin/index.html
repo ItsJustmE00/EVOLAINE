@@ -92,9 +92,14 @@
     </style>
 </head>
 <body class="bg-gray-100">
+    <!-- Barre mobile -->
+    <div class="md:hidden flex items-center justify-between bg-indigo-700 text-white px-4 py-3">
+        <h1 class="font-bold">EVOLAINE Admin</h1>
+        <button id="mobile-menu-button"><i class="fas fa-bars text-2xl"></i></button>
+    </div>
     <div class="min-h-screen">
         <!-- Sidebar -->
-        <div class="bg-indigo-700 text-white w-64 fixed h-full">
+        <div id="sidebar" class="hidden md:block bg-indigo-700 text-white md:w-64 fixed h-full transform -translate-x-full md:translate-x-0 transition-transform duration-300">
             <div class="p-4">
                 <h1 class="text-2xl font-bold">EVOLAINE Admin</h1>
             </div>
@@ -112,7 +117,7 @@
         </div>
 
         <!-- Main Content -->
-        <div class="ml-64 p-8">
+        <div class="p-8 md:ml-64">
             <!-- Dashboard -->
             <div id="dashboard" class="content-section">
                 <h2 class="text-2xl font-bold mb-6">Tableau de bord</h2>
