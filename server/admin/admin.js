@@ -560,6 +560,20 @@ function formatDate(dateString) {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM chargé, initialisation de l\'interface');
 
+    // Charger immédiatement les données principales (dashboard, commandes, messages)
+    if (typeof updateDashboard === 'function') {
+        console.log('📊 Chargement initial du tableau de bord...');
+        updateDashboard();
+    }
+    if (typeof loadOrders === 'function') {
+        console.log('📦 Chargement initial des commandes...');
+        loadOrders();
+    }
+    if (typeof loadMessages === 'function') {
+        console.log('💬 Chargement initial des messages...');
+        loadMessages();
+    }
+
   // Toggle sidebar on mobile
   const btn = document.getElementById('mobile-menu-button');
   if (btn) {
@@ -1187,6 +1201,8 @@ if (typeof window !== 'undefined') {
     window.displayOrders = displayOrders;
     window.filterAndDisplayOrders = filterAndDisplayOrders;
     window.loadOrders = loadOrders;
+        window.closeModal = closeModal;
+        window.deleteCurrentOrder = deleteCurrentOrder;
     if (typeof displayMessages === 'function') window.displayMessages = displayMessages;
     if (typeof loadMessages === 'function') window.loadMessages = loadMessages;
   });
@@ -1200,6 +1216,22 @@ if (typeof window !== 'undefined') {
 
 // (supprimé: ancien stub displayMessages)
 
+
+// Fermer le modal des commandes
+function closeModal() {
+    const modal = document.getElementById('order-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+    window.currentOrderId = null;
+    currentOrderId = null;
+}
+
+// Supprimer la commande actuellement ouverte dans le modal
+function deleteCurrentOrder() {
+    if (!currentOrderId) return;
+    deleteOrder(currentOrderId);
+}
 
 // Fonctions pour la gestion des commandes
 var allOrders = [];
