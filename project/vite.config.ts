@@ -2,6 +2,12 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath } from 'url';
 
+// Configuration pour le mode développement et production
+const isDevelopment = process.env.NODE_ENV === 'development';
+const apiUrl = isDevelopment 
+  ? 'http://localhost:3004' 
+  : 'https://evolaine-backend.onrender.com';
+
 export default defineConfig({
   plugins: [react()],
   // Configuration de base pour les chemins d'accès
@@ -17,13 +23,11 @@ export default defineConfig({
       strict: false,
       allow: ['..']
     },
-    // Configuration pour le routage côté client (SPA)
-    // Cette configuration permet de rediriger toutes les requêtes vers index.html
-    // pour permettre le routage côté client avec React Router
-    proxy: process.env.NODE_ENV === 'development' ? {
+    // Configuration du proxy pour le développement
+    proxy: isDevelopment ? {
       // Redirection des requêtes API vers le serveur backend en développement
       '/api': {
-        target: 'http://localhost:3004',
+        target: apiUrl,
         changeOrigin: true,
         secure: false,
         rewrite: (path: string) => path,
@@ -34,7 +38,7 @@ export default defineConfig({
           proxy.on('proxyReq', (proxyReq) => {
             console.log('Requête proxy vers:', proxyReq.method, proxyReq.path);
             // Forcer les en-têtes pour éviter les problèmes CORS
-            proxyReq.setHeader('host', 'localhost:3004');
+            proxyReq.setHeader('host', new URL(apiUrl).host);
             proxyReq.setHeader('origin', 'http://localhost:3000');
             proxyReq.setHeader('referer', 'http://localhost:3000');
           });

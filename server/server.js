@@ -3,6 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const jwt = require('jsonwebtoken');
 const http = require('http');
+const fs = require('fs');
 const { Server } = require('socket.io');
 const os = require('os');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
@@ -17,7 +18,7 @@ const config = {
   DB_NAME: process.env.DB_NAME || 'evolaine',
   DB_PASSWORD: process.env.DB_PASSWORD || 'postgres',
   DB_PORT: process.env.DB_PORT || 5432,
-  JWT_SECRET: process.env.JWT_SECRET || 'votre_cle_secrete_tres_longue_et_securisee',
+  JWT_SECRET: process.env.JWT_SECRET || 'f5cc1fb8036dfadd1b811416c4e9dfda',
 };
 
 // En production, vérifier que toutes les variables requises sont définies
@@ -44,7 +45,7 @@ console.log('Configuration chargée avec succès:', {
 });
 
 // Clé secrète pour les tokens JWT
-const JWT_SECRET = process.env.JWT_SECRET || 'votre_cle_secrete_tres_longue_et_securisee';
+const JWT_SECRET = process.env.JWT_SECRET || 'f5cc1fb8036dfadd1b811416c4e9dfda';
 
 // Création de l'application Express
 console.log('Création de l\'application Express...');
@@ -96,10 +97,80 @@ io.on('connection', (socket) => {
   console.log('URL de connexion:', socket.handshake.url);
   console.log('Adresse IP du client:', socket.handshake.address);
   
+  // Fonction utilitaire pour diffuser des mises à jour aux administrateurs
+  const broadcastToAdmins = (event, data) => {
+    io.to('admin').emit(event, {
+      ...data,
+      timestamp: new Date().toISOString(),
+      serverTime: new Date().toISOString()
+    });
+  };
+  
+  // Exposer la fonction utilitaire pour une utilisation dans d'autres parties du code
+  io.broadcastToAdmins = broadcastToAdmins;
+
+  // Gestion de la connexion d'un administrateur
+  socket.on('admin_join', (data, callback) => {
+    console.log(`🔑 Tentative de connexion admin depuis ${socket.id}:`, data);
+    
+    try {
+      // Vérifier si l'utilisateur est authentifié (à implémenter selon votre logique d'authentification)
+      // Pour l'instant, on accepte toutes les connexions admin
+      
+      // Rejoindre la room admin
+      socket.join('admin');
+      console.log(`👤 Admin connecté: ${socket.id} a rejoint la room admin`);
+      
+      // Répondre avec un succès
+      if (typeof callback === 'function') {
+        callback({
+          success: true,
+          message: 'Connecté avec succès à la room admin',
+          timestamp: new Date().toISOString(),
+          socketId: socket.id
+        });
+      }
+      
+      // Envoyer un message de bienvenue
+      socket.emit('admin_welcome', {
+        message: 'Bienvenue dans le panneau d\'administration',
+        serverTime: new Date().toISOString(),
+        connectedClients: io.engine.clientsCount,
+        socketId: socket.id
+      });
+      
+      // Notifier les autres admins
+      socket.to('admin').emit('admin_connected', {
+        socketId: socket.id,
+        timestamp: new Date().toISOString(),
+        totalAdmins: io.sockets.adapter.rooms.get('admin')?.size || 1
+      });
+      
+    } catch (error) {
+      console.error('Erreur lors de la connexion admin:', error);
+      if (typeof callback === 'function') {
+        callback({
+          success: false,
+          error: 'Erreur lors de la connexion au panneau admin',
+          details: error.message
+        });
+      }
+    }
+  });
+  
   // Gestion des déconnexions
   socket.on('disconnect', (reason) => {
-    console.log(`Client ${socket.id} déconnecté. Raison: ${reason}`);
-    console.log('Salles avant déconnexion:', Array.from(socket.rooms));
+    const wasAdmin = socket.rooms.has('admin');
+    console.log(`Client ${socket.id} (${wasAdmin ? 'Admin' : 'User'}) déconnecté. Raison: ${reason}`);
+    
+    if (wasAdmin) {
+      // Notifier les autres admins de la déconnexion
+      socket.to('admin').emit('admin_disconnected', {
+        socketId: socket.id,
+        timestamp: new Date().toISOString(),
+        reason: reason
+      });
+    }
   });
   
   // Gestion des erreurs de connexion
@@ -107,11 +178,25 @@ io.on('connection', (socket) => {
     console.error(`Erreur de connexion pour le client ${socket.id}:`, error);
   });
   
-  // Rejoindre la room admin
-  socket.on('admin_join', (data, callback) => {
-    console.log(`🔑 Tentative de rejoindre la room admin par le client ${socket.id}`, data);
-    
-    // Ajouter des logs pour le débogage
+  // Gestion des erreurs générales
+  socket.on('error', (error) => {
+    console.error(`Erreur Socket.IO pour le client ${socket.id}:`, error);
+  });
+  
+  // Ping/pong pour maintenir la connexion active
+  let pingTimeout;
+  
+  function heartbeat() {
+    clearTimeout(pingTimeout);
+    // Définir un timeout pour déconnecter le client s'il ne répond pas au ping
+    pingTimeout = setTimeout(() => {
+      console.log(`Déconnexion du client ${socket.id} en raison d'un timeout`);
+      socket.disconnect(true);
+    }, 10000 + 2000); // 10s + 2s de marge
+  }
+  
+  socket.on('ping', heartbeat);
+  socket.on('pong', heartbeat);
     console.log('Salles actuelles avant join:', Array.from(socket.rooms));
     
     // Rejoindre la room admin
@@ -180,18 +265,12 @@ function verifyAdminToken(token) {
 console.log('🔧 Configuration CORS...');
 const allowedOrigins = [
   'http://localhost:3000',
-  'http://localhost:3003',
   'http://localhost:3004',
   'http://127.0.0.1:3000',
-  'http://127.0.0.1:3003',
   'http://127.0.0.1:3004',
-  'http://192.168.1.100:3000',
-  'http://192.168.1.100:3003',
-  'http://192.168.1.100:3004',
-  'http://192.168.3.11:3000',
-  'http://192.168.3.11:3003',
-  'http://192.168.3.11:3004',
-  'https://evolaine.onrender.com',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'https://evolaine.vercel.app',
   'https://www.evolaine.com',
   'https://evolaine.com',
   'https://evolaine-backend.onrender.com',
@@ -334,8 +413,8 @@ app.post('/api/admin/login', (req, res) => {
   const { username, password } = req.body;
   
   // Vérifier les identifiants (à remplacer par une vraie vérification en base de données)
-  const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
-  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'votre_mot_de_passe_tres_securise';
+  const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'adevolaine_usermin';
+  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Ev3IK5xjDLB0IasN0XoaKZUhu8ZhR4hGe';
   
   if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
     // Créer un token JWT
@@ -556,12 +635,13 @@ async function initializeDatabase() {
 // Pas besoin d'appeler initializeDatabase() ici car elle est déjà appelée après une connexion réussie
 
 // Configuration du dossier des fichiers statiques
-const adminPath = path.join(__dirname, 'admin');
-const fs = require('fs');
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Middleware pour servir les fichiers statiques de l'admin
+// Configuration du dossier d'administration
+const adminPath = path.join(__dirname, 'admin');
+
+// Middleware pour servir les fichiers statiques de l'administration
 app.use('/admin', (req, res, next) => {
-  // Désactiver la mise en cache pour les fichiers statiques
   res.setHeader('Cache-Control', 'no-cache');
   
   // Si c'est la racine de l'admin, servir index.html
@@ -586,12 +666,17 @@ app.use('/admin', (req, res, next) => {
   }
   
   // Pour les routes SPA, rediriger vers index.html
-  const indexPath = path.join(adminPath, 'index.html');
-  if (fs.existsSync(indexPath)) {
-    return res.sendFile(indexPath);
+  const spaIndexPath = path.join(adminPath, 'index.html');
+  if (fs.existsSync(spaIndexPath)) {
+    return res.sendFile(spaIndexPath);
   }
   
   next();
+});
+
+// Route pour l'interface d'administration
+app.get('/admin*', (req, res) => {
+  res.sendFile(path.join(adminPath, 'index.html'));
 });
 
 // Endpoint de santé

@@ -6,95 +6,222 @@ let currentMessageId = null;
 const API_BASE_URL = 'https://evolaine-backend.onrender.com';
 const API_URL = API_BASE_URL; // La base de l'URL, car les routes commencent déjà par /api
 
-// Configuration de Socket.IO
-console.log('Initialisation de la connexion Socket.IO...');
+// Configuration de la connexion WebSocket
+console.log('🚀 Initialisation de la connexion WebSocket...');
+
+// Détecter si on est en développement (localhost)
+const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const isProduction = window.location.hostname === 'evolaine.vercel.app';
+
+// Configuration des URLs WebSocket
+const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const wsHost = isLocalhost 
+  ? 'localhost:10000' 
+  : isProduction 
+    ? 'evolaine-backend.onrender.com'
+    : window.location.host;
+
+const wsUrl = isLocalhost
+  ? `${wsProtocol}//${wsHost}`
+  : `${wsProtocol}//${wsHost}/socket.io`;
+
+console.log('Configuration WebSocket:', {
+  hostname: window.location.hostname,
+  isLocalhost,
+  isProduction,
+  wsProtocol,
+  wsHost,
+  wsUrl
+});
 
 // Configuration de la connexion Socket.IO
 const socketOptions = {
+  // URL du serveur WebSocket
+  ...(isLocalhost && { hostname: wsHost }),
   path: '/socket.io',
+  
+  // Configuration des transports
   transports: ['websocket', 'polling'],
-  autoConnect: true,
-  withCredentials: true,
+  upgrade: true,
+  forceNew: true,
+  
+  // Gestion de la reconnexion
   reconnection: true,
   reconnectionAttempts: 10,
   reconnectionDelay: 1000,
   reconnectionDelayMax: 5000,
-  timeout: 20000,
-  // Forcer l'utilisation de WebSocket en priorité
-  upgrade: true,
-  // Paramètres de requête pour éviter la mise en cache
-  query: { 
-    t: Date.now(),
-    EIO: 4, // Forcer la version 4 du protocole
-    transport: 'websocket'
-  },
-  // Configuration de la reconnexion
   randomizationFactor: 0.5,
+  
+  // Timeout et gestion des pings
+  timeout: 20000,
+  pingTimeout: 10000,
+  pingInterval: 25000,
+  
   // Sécurité
-  rejectUnauthorized: process.env.NODE_ENV === 'production' ? true : false,
-  // Désactiver le multiplexing pour éviter les problèmes de connexion
-  forceNew: true,
-  // Activer le débogage détaillé
-  debug: true,
-  // Configuration spécifique pour les navigateurs plus anciens
-  jsonp: false,
-  // Désactiver le polling long si WebSocket échoue
-  forceBase64: false,
-  // Désactiver les timeouts agressifs
-  timeout: 60000
+  withCredentials: true,
+  rejectUnauthorized: !isLocalhost,
+  
+  // Debug
+  autoConnect: true,
+  debug: isLocalhost,
+  
+  // Headers personnalisés
+  extraHeaders: {
+    'X-Client-Type': 'admin-panel',
+    'X-Client-Version': '1.0.0'
+  }
 };
 
-console.log('Options de connexion Socket.IO:', JSON.stringify(socketOptions, null, 2));
+console.log('🔌 Configuration WebSocket:', {
+  url: wsUrl,
+  options: {
+    ...socketOptions,
+    // Ne pas logger les données sensibles
+    extraHeaders: '***'
+  }
+});
 
 // Créer la connexion Socket.IO
+console.log('🔄 Connexion au serveur WebSocket...');
 const socket = io(socketOptions);
+
+// Variables pour la gestion des reconnexions
+let connectionAttempts = 0;
+const MAX_CONNECTION_ATTEMPTS = 5;
+let isConnected = false;
+let reconnectTimeout;
 
 // Fonction utilitaire pour formater la date
 function formatTimestamp() {
   return new Date().toISOString().replace('T', ' ').substring(0, 19);
 }
 
-// Log des événements de connexion/déconnexion
-socket.on('connect', () => {
-  const timestamp = formatTimestamp();
-  console.log(`[${timestamp}] ✅ Connecté au serveur WebSocket avec l'ID:`, socket.id);
-  
-  // Mettre à jour le statut de connexion dans l'interface
+// Fonction pour mettre à jour l'interface utilisateur avec l'état de connexion
+function updateConnectionStatus(connected, message = '') {
   const statusIndicator = document.getElementById('connection-status');
+  const statusText = document.getElementById('connection-status-text');
+  
   if (statusIndicator) {
-    statusIndicator.className = 'inline-block w-3 h-3 rounded-full bg-green-500 mr-2';
-    statusIndicator.title = `Connecté (${socket.id})`;
+    statusIndicator.className = `inline-block w-3 h-3 rounded-full mr-2 ${connected ? 'bg-green-500' : 'bg-red-500'}`;
+    statusIndicator.title = connected ? `Connecté (${socket.id})` : 'Déconnecté';
   }
   
-  // Rejoindre la room admin dès la connexion
-  console.log(`[${timestamp}] Envoi de la demande de connexion à la room admin...`);
+  if (statusText) {
+    statusText.textContent = connected ? 'Connecté' : 'Déconnecté';
+    statusText.className = `text-sm ${connected ? 'text-green-600' : 'text-red-600'}`;
+  }
   
-  // Envoyer la demande de connexion à la room admin avec un timeout
-  const joinAdmin = () => {
+  if (message) {
+    console.log(`[${formatTimestamp()}] ${message}`);
+  }
+}
+
+// Fonction pour tenter de se reconnecter
+function attemptReconnect() {
+  if (connectionAttempts >= MAX_CONNECTION_ATTEMPTS) {
+    console.error(`[${formatTimestamp()}] ❌ Nombre maximum de tentatives de reconnexion atteint (${MAX_CONNECTION_ATTEMPTS})`);
+    updateConnectionStatus(false, 'Échec de la connexion au serveur. Veuillez rafraîchir la page.');
+    return;
+  }
+  
+  const delay = Math.min(1000 * Math.pow(2, connectionAttempts), 30000); // Augmentation exponentielle avec un maximum de 30s
+  connectionAttempts++;
+  
+  console.log(`[${formatTimestamp()}] 🔄 Tentative de reconnexion ${connectionAttempts}/${MAX_CONNECTION_ATTEMPTS} dans ${delay}ms...`);
+  
+  reconnectTimeout = setTimeout(() => {
+    if (!isConnected) {
+      socket.connect();
+    }
+  }, delay);
+}
+
+// Fonction pour gérer la connexion à la room admin
+function joinAdminRoom() {
+  const joinAttempt = () => {
+    console.log(`[${formatTimestamp()}] 🔑 Envoi de la demande de connexion à la room admin...`);
+    
     socket.emit('admin_join', { 
       timestamp: new Date().toISOString(),
       clientInfo: {
         userAgent: navigator.userAgent,
         url: window.location.href,
-        referrer: document.referrer
+        referrer: document.referrer,
+        screen: {
+          width: window.screen.width,
+          height: window.screen.height,
+          colorDepth: window.screen.colorDepth
+        }
       }
     }, (response) => {
-      const responseTimestamp = formatTimestamp();
-      if (response) {
-        console.log(`[${responseTimestamp}] ✅ Réponse du serveur après admin_join:`, response);
+      if (response && response.success) {
+        isConnected = true;
+        connectionAttempts = 0;
+        clearTimeout(reconnectTimeout);
+        updateConnectionStatus(true, '✅ Connecté avec succès au panneau d\'administration');
+        console.log(`[${formatTimestamp()}] ✅ Connecté à la room admin:`, response);
       } else {
-        console.error(`[${responseTimestamp}] ❌ Aucune réponse du serveur pour admin_join`);
+        console.error(`[${formatTimestamp()}] ❌ Échec de la connexion à la room admin:`, response);
+        updateConnectionStatus(false, 'Échec de la connexion au panneau d\'administration');
+        attemptReconnect();
       }
     });
   };
   
-  // Essayer de rejoindre la room admin immédiatement
-  joinAdmin();
+  // Essayer immédiatement
+  joinAttempt();
   
-  // Et également après un court délai au cas où
-  setTimeout(joinAdmin, 1000);
+  // Et une deuxième fois après un court délai pour s'assurer que la connexion est bien établie
+  setTimeout(joinAttempt, 1000);
+}
+
+// Gestion des événements de connexion
+document.addEventListener('DOMContentLoaded', () => {
+  // Initialiser l'état de connexion
+  updateConnectionStatus(false, 'Connexion en cours...');
   
-  console.log(`[${timestamp}] 🔑 Demande de connexion à la room admin envoyée`);
+  // Configurer les écouteurs d'événements
+  
+  // Connexion établie
+  socket.on('connect', () => {
+    console.log(`[${formatTimestamp()}] 🌐 Connecté au serveur WebSocket avec l'ID:`, socket.id);
+    updateConnectionStatus(true, 'Connexion au serveur établie');
+    joinAdminRoom();
+  });
+  
+  // Déconnexion
+  socket.on('disconnect', (reason) => {
+    isConnected = false;
+    console.log(`[${formatTimestamp()}] 🔌 Déconnecté du serveur. Raison:`, reason);
+    updateConnectionStatus(false, 'Déconnecté du serveur');
+    
+    if (reason === 'io server disconnect') {
+      // La déconnexion a été initiée par le serveur, on se reconnecte
+      console.log(`[${formatTimestamp()}] 🔄 Tentative de reconnexion...`);
+      socket.connect();
+    } else {
+      // Autre raison de déconnexion, on tente de se reconnecter
+      attemptReconnect();
+    }
+  });
+  
+  // Erreur de connexion
+  socket.on('connect_error', (error) => {
+    console.error(`[${formatTimestamp()}] ❌ Erreur de connexion:`, error.message);
+    updateConnectionStatus(false, `Erreur de connexion: ${error.message}`);
+    
+    if (!isConnected) {
+      attemptReconnect();
+    }
+  });
+  
+  // Réception d'un message de bienvenue
+  socket.on('admin_welcome', (data) => {
+    console.log(`[${formatTimestamp()}] 👋 Message de bienvenue:`, data.message);
+    showNotification(data.message, 'success');
+  });
+  
+  // Autres gestionnaires d'événements...
 });
 
 // Gestion des déconnexions

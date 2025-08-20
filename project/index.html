@@ -1,14 +1,63 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" class="h-full">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/image/logo.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="EVOLAINE - Soins de beauté naturels marocains" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="description" content="EVOLAINE - Découvrez nos soins de beauté naturels et authentiques inspirés des traditions marocaines. Des produits 100% naturels pour une beauté éclatante." />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="robots" content="index, follow" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://evolaine.vercel.app/" />
+    <meta property="og:title" content="EVOLAINE - Beauté Naturelle Marocaine" />
+    <meta property="og:description" content="Découvrez nos soins de beauté naturels et authentiques inspirés des traditions marocaines." />
+    <meta property="og:image" content="https://evolaine.vercel.app/image/og-image.jpg" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://evolaine.vercel.app/" />
+    <meta name="twitter:title" content="EVOLAINE - Beauté Naturelle Marocaine" />
+    <meta name="twitter:description" content="Découvrez nos soins de beauté naturels et authentiques inspirés des traditions marocaines." />
+    <meta name="twitter:image" content="https://evolaine.vercel.app/image/og-image.jpg" />
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/image/logo-192x192.png" />
+    
     <title>EVOLAINE - Beauté Naturelle Marocaine</title>
+    
+    <!-- Préchargement des polices -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    
+    <!-- Préchargement des ressources critiques -->
+    <link rel="preload" href="/src/main.tsx" as="script" />
   </head>
-  <body>
+  <body class="h-full bg-white text-gray-900 antialiased">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Script de gestion du thème -->
+    <script>
+      // Vérifier le thème préféré de l'utilisateur
+      if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      
+      // Gestion du chargement de l'application
+      window.addEventListener('load', function() {
+        // Masquer le préchargeur si présent
+        const preloader = document.getElementById('preloader');
+        if (preloader) {
+          preloader.style.opacity = '0';
+          setTimeout(() => preloader.remove(), 300);
+        }
+      });
+    </script>
   </body>
 </html>
