@@ -364,40 +364,50 @@ app.use((err, req, res, next) => {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Suivi des tentatives de connexion admin par IP
+const loginAttempts = {};
+
 // Route de connexion admin
 app.post('/api/admin/login', (req, res) => {
   const { username, password } = req.body;
-  
-  // Vérifier les identifiants (à remplacer par une vraie vérification en base de données)
-  const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'adevolaine_usermin';
-  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Ev3IK5xjDLB0IasN0XoaKZUhu8ZhR4hGe';
-  
-  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-    // Créer un token JWT
-    const token = jwt.sign(
-      { role: 'admin', username },
-      JWT_SECRET,
-      { expiresIn: '8h' }
-    );
-    
-    res.json({ token });
+  const ip = req.ip || req.connection.remoteAddress;
+  let entry = loginAttempts[ip] || { count: 0, lockUntil: 0 };
+
+  // Si l'IP est actuellement bloquée
+  if (entry.lockUntil && Date.now() < entry.lockUntil) {
+    const retryAfter = Math.ceil((entry.lockUntil - Date.now()) / 1000);
+    return res.status(429).json({ success: false, error: `Trop de tentatives. Réessayez dans ${retryAfter}s` });
   }
 
-  // Wrong creds
+  const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'EVOLAINE';
+  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'TAHR1TAHR1';
+
+  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    // Réinitialiser le compteur après un succès
+    loginAttempts[ip] = { count: 0, lockUntil: 0 };
+
+    // Créer un token JWT valable 8h
+    const token = jwt.sign({ role: 'admin', username }, JWT_SECRET, { expiresIn: '8h' });
+    return res.json({ success: true, token });
+  }
+
+  // Mauvais identifiants → incrémenter le compteur
   entry.count += 1;
-  const attempts = entry.count;
   let lockDuration = 0;
-  if (attempts === 1) {
-    lockDuration = 60 * 1000; // 1 minute after first wrong attempt
-  } else if (attempts % 3 === 0) {
-    lockDuration = 60 * 60 * 1000; // 1h after every 3 wrong attempts
+  if (entry.count === 1) {
+    lockDuration = 60 * 1000; // 1 min après la 1ʳᵉ erreur
+  } else if (entry.count % 3 === 0) {
+    lockDuration = 60 * 60 * 1000; // 1 h après chaque 3ᵉ erreur
   }
   if (lockDuration) {
     entry.lockUntil = Date.now() + lockDuration;
   }
+  loginAttempts[ip] = entry;
 
   return res.status(401).json({ success: false, error: 'Identifiants invalides' });
 });
+
+  
 
 // Middleware pour protéger les routes admin - DÉSACTIVÉ POUR LE DÉVELOPPEMENT
 function adminAuth(req, res, next) {
