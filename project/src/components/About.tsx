@@ -24,7 +24,7 @@ const About: React.FC = () => {
             </div>
 
             {/* Grille des fonctionnalités */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 gap-6">
               <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 w-full">
                 <div className="bg-pink-100 w-16 h-16 rounded-full flex items-center justify-center mb-6 mx-auto lg:mx-0">
                   <Leaf className="w-8 h-8 text-pink-600" />
