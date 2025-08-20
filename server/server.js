@@ -274,7 +274,8 @@ const allowedOrigins = [
   'https://www.evolaine.com',
   'https://evolaine.com',
   'https://evolaine-backend.onrender.com',
-  'https://evolaine-frontend.onrender.com'
+  'https://evolaine-frontend.onrender.com',
+  'https://project-lilac-beta.vercel.app'
 ];
 
 console.log('✅ Origines autorisées:', allowedOrigins);
