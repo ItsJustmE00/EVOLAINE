@@ -1765,6 +1765,32 @@ async function deleteMessage(messageId) {
     }
 }
 
+// Mettre à jour le statut choisi dans le modal
+if (typeof window.updateSelectedOrderStatus === 'undefined') {
+  function updateSelectedOrderStatus() {
+    const select = document.getElementById('order-status');
+    if (!select) return;
+    const frStatus = select.value;
+    const statusMap = {
+      'Nouvelle': 'pending',
+      'En cours': 'processing',
+      'Terminée': 'completed',
+      'Annulée': 'cancelled'
+    };
+    const newStatus = statusMap[frStatus];
+    if (!newStatus) {
+      alert('Statut non reconnu');
+      return;
+    }
+    if (!window.currentOrderId) {
+      alert('ID de la commande introuvable');
+      return;
+    }
+    updateOrderStatus(window.currentOrderId, newStatus);
+  }
+  window.updateSelectedOrderStatus = updateSelectedOrderStatus;
+}
+
 // Fonctions utilitaires
 if (typeof window.getStatusClass === 'undefined') {
   window.getStatusClass = function(status) {
