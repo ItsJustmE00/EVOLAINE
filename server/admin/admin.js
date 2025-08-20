@@ -171,8 +171,7 @@ function joinAdminRoom() {
   // Essayer immédiatement
   joinAttempt();
   
-  // Et une deuxième fois après un court délai pour s'assurer que la connexion est bien établie
-  setTimeout(joinAttempt, 1000);
+  
 }
 
 // Gestion des événements de connexion
