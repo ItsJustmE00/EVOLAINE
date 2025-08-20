@@ -151,6 +151,7 @@ async function ensureSchema() {
     await pool.query(`ALTER TABLE IF EXISTS messages ADD COLUMN IF NOT EXISTS full_name VARCHAR(255);`);
     await pool.query(`ALTER TABLE IF EXISTS messages ADD COLUMN IF NOT EXISTS name VARCHAR(255);`);
     await pool.query(`UPDATE messages SET name = full_name WHERE name IS NULL;`);
+    await pool.query(`ALTER TABLE IF EXISTS messages ALTER COLUMN email DROP NOT NULL;`);
     console.log('✅ Schéma vérifié / colonne full_name OK');
   } catch (err) {
     console.error('❌ Erreur lors de la vérification/ajout de la colonne full_name:', err.message);
