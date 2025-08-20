@@ -1387,7 +1387,7 @@ async function viewOrder(orderId) {
         
         const order = result.data;
 
-        const modalEl = document.getElementById('order-modal');
+        let modalEl = document.getElementById('order-modal');
         if (!modalEl) {
             // Assurer d'abord que la section commandes est affichée afin que le modal soit dans le DOM
             if (typeof window.showSection === 'function') {
