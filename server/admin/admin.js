@@ -2,11 +2,11 @@
 if (typeof window.currentOrderId === 'undefined') {
   window.currentOrderId = null;
 }
-const currentOrderId = window.currentOrderId;
+let currentOrderId = window.currentOrderId;
 if (typeof window.currentMessageId === 'undefined') {
   window.currentMessageId = null;
 }
-const currentMessageId = window.currentMessageId;
+let currentMessageId = window.currentMessageId;
 
 // Configuration de l'URL de l'API
 const API_BASE_URL = 'https://evolaine-backend.onrender.com';
@@ -1745,6 +1745,7 @@ async function viewMessage(messageId) {
         console.log('Détails du message chargé:', message);
         
         currentMessageId = message.id;
+        window.currentMessageId = message.id;
         
         // Mettre à jour le modal avec les détails du message
         document.getElementById('message-subject').textContent = message.subject || 'Sans objet';
