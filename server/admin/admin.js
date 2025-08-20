@@ -1234,25 +1234,8 @@ function deleteCurrentOrder() {
     deleteOrder(currentOrderId);
 }
 
-// Charger toutes les commandes depuis l'API
-async function loadOrders() {
-    try {
-        const url = `${API_URL}/api/orders`;
-        console.log('📥 Récupération des commandes depuis:', url);
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const raw = await res.json();
-        allOrders = raw && raw.data ? raw.data : raw;
-        console.log('✅ Commandes chargées:', allOrders.length);
-        filterAndDisplayOrders();
-    } catch (err) {
-        console.error('❌ Erreur chargement commandes:', err);
-        const container = document.getElementById('orders-list');
-        if (container) {
-            container.innerHTML = '<p class="p-4 text-red-600">Erreur lors du chargement des commandes.</p>';
-        }
-    }
-}
+
+
 
 // Fonctions pour la gestion des commandes
 var allOrders = [];
