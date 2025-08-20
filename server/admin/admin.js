@@ -1583,14 +1583,19 @@ async function viewOrder(orderId) {
         // Afficher le modal
         // Ajouter dynamiquement le bouton Imprimer si absent
         try {
-            const completeBtn = modalEl.querySelector('#complete-order-btn');
-            if (completeBtn && completeBtn.parentNode && !completeBtn.parentNode.querySelector('#print-order-btn')) {
+            let actionsContainer = modalEl.querySelector('#complete-order-btn')?.parentNode;
+            if (!actionsContainer) {
+                // fallback: container that holds Annuler/Supprimer buttons
+                actionsContainer = Array.from(modalEl.querySelectorAll('button')).find(b => b.textContent?.trim().includes('Annuler'))?.parentNode || null;
+            }
+            if (actionsContainer && !actionsContainer.querySelector('#print-order-btn')) {
                 const printBtn = document.createElement('button');
                 printBtn.id = 'print-order-btn';
                 printBtn.className = 'flex items-center bg-indigo-600 text-white px-6 py-2 rounded hover:bg-indigo-700 mr-2';
                 printBtn.innerHTML = '<i class="fas fa-print mr-2"></i> Imprimer';
                 printBtn.addEventListener('click', () => printOrderDetails());
-                completeBtn.parentNode.insertBefore(printBtn, completeBtn.parentNode.firstChild);
+                console.log('🖨️ Bouton Imprimer ajouté au modal');
+                actionsContainer.insertBefore(printBtn, actionsContainer.firstChild);
             }
         } catch (e) {
             console.warn('Impossible d\'ajouter le bouton Imprimer', e);
