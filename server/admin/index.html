@@ -185,15 +185,18 @@
                     <div class="p-6">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-xl font-bold">Détails de la commande <span id="order-id"></span></h3>
-                            <div class="flex space-x-2">
-                                <button onclick="printOrderDetails()" class="flex items-center text-indigo-600 hover:text-indigo-800" title="Imprimer">
-                                    <i class="fas fa-print mr-1"></i> Imprimer
+                            <div class="p-6 flex flex-wrap justify-end gap-3">
+                                <button onclick="printOrderDetails()" class="flex items-center bg-indigo-100 text-indigo-700 px-6 py-2 rounded hover:bg-indigo-200">
+                                    <i class="fas fa-print mr-2"></i> Imprimer
                                 </button>
-                                <button onclick="deleteCurrentOrder()" class="text-red-500 hover:text-red-700" title="Supprimer la commande">
-                                    <i class="fas fa-trash"></i>
+                                <button onclick="updateSelectedOrderStatus('Annulée')" class="bg-red-100 text-red-600 px-6 py-2 rounded hover:bg-red-200" id="cancel-order-btn">
+                                    Annuler
                                 </button>
-                                <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700">
-                                    <i class="fas fa-times"></i>
+                                <button onclick="deleteCurrentOrder()" class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700" id="delete-order-btn">
+                                    Supprimer
+                                </button>
+                                <button onclick="updateSelectedOrderStatus('Terminée')" class="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600" id="complete-order-btn">
+                                    Marquer comme terminée
                                 </button>
                             </div>
                         </div>
