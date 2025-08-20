@@ -1176,15 +1176,26 @@ async function deleteOrder(orderId) {
   }
 }
 
-// Rendre les fonctions accessibles aux attributs HTML inline
+// Exposer les fonctions globalement une fois que tout le script est chargé
 if (typeof window !== 'undefined') {
-  window.deleteOrder = deleteOrder;
-  window.updateOrderStatus = updateOrderStatus;
-  window.displayOrders = displayOrders;
-  window.filterAndDisplayOrders = filterAndDisplayOrders;
-  window.loadOrders = loadOrders;
-  window.viewOrder = viewOrder;
+  // Retarder l'exposition jusqu'à ce que toutes les fonctions soient définies
+  document.addEventListener('DOMContentLoaded', () => {
+    window.deleteOrder = deleteOrder;
+    window.updateOrderStatus = updateOrderStatus;
+    window.viewOrder = viewOrder;
+    window.displayOrders = displayOrders;
+    window.filterAndDisplayOrders = filterAndDisplayOrders;
+    window.loadOrders = loadOrders;
+    if (typeof displayMessages === 'function') window.displayMessages = displayMessages;
+    if (typeof loadMessages === 'function') window.loadMessages = loadMessages;
+  });
 }
+
+
+
+
+
+
 
 // Fonctions pour la gestion des commandes
 var allOrders = [];
