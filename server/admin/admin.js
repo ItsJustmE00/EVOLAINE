@@ -1180,6 +1180,7 @@ async function deleteOrder(orderId) {
 if (typeof window !== 'undefined') {
   window.deleteOrder = deleteOrder;
   window.updateOrderStatus = updateOrderStatus;
+  window.displayOrders = displayOrders;
   window.viewOrder = viewOrder;
 }
 
