@@ -1386,21 +1386,29 @@ async function viewOrder(orderId) {
         }
         
         const order = result.data;
+
+        const modalEl = document.getElementById('order-modal');
+        if (!modalEl) {
+            console.error('order-modal element non trouvé');
+            return;
+        }
+        // s'assurer que le modal est visible
+        modalEl.classList.remove('hidden');
         window.currentOrderId = order.id;
         
         // Mettre à jour le modal avec les détails de la commande
-        document.getElementById('order-id').textContent = `#${order.id}`;
-        document.getElementById('customer-name').textContent = `${order.first_name || ''} ${order.last_name || ''}`.trim() || 'Non spécifié';
-        document.getElementById('customer-phone').textContent = order.phone || 'Non spécifié';
-        document.getElementById('customer-address').textContent = [order.address, order.city].filter(Boolean).join(', ') || 'Adresse non spécifiée';
-        document.getElementById('order-city').textContent = order.city || 'Ville non spécifiée';
-        document.getElementById('order-notes').textContent = order.notes || 'Aucune note';
-        document.getElementById('order-status').value = order.status || 'pending';
-        document.getElementById('order-date').textContent = order.created_at ? new Date(order.created_at).toLocaleString() : 'Date inconnue';
-        document.getElementById('order-total').textContent = order.total ? parseFloat(order.total).toFixed(2) : '0.00';
+        modalEl.querySelector('#order-id').textContent = `#${order.id}`;
+        modalEl.querySelector('#customer-name').textContent = `${order.first_name || ''} ${order.last_name || ''}`.trim() || 'Non spécifié';
+        modalEl.querySelector('#customer-phone').textContent = order.phone || 'Non spécifié';
+        modalEl.querySelector('#customer-address').textContent = [order.address, order.city].filter(Boolean).join(', ') || 'Adresse non spécifiée';
+        modalEl.querySelector('#order-city').textContent = order.city || 'Ville non spécifiée';
+        modalEl.querySelector('#order-notes').textContent = order.notes || 'Aucune note';
+        modalEl.querySelector('#order-status').value = order.status || 'pending';
+        modalEl.querySelector('#order-date').textContent = order.created_at ? new Date(order.created_at).toLocaleString() : 'Date inconnue';
+        modalEl.querySelector('#order-total').textContent = order.total ? parseFloat(order.total).toFixed(2) : '0.00';
         
         // Afficher les articles
-        const itemsContainer = document.getElementById('order-items');
+        const itemsContainer = modalEl.querySelector('#order-items');
         // Vérifier si items est une chaîne (JSON) ou déjà un objet
         const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
         
