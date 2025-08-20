@@ -1355,6 +1355,10 @@ async function loadMessages() {
 }
 
 // Afficher les détails d'une commande
+if (typeof window.currentOrderId === 'undefined') {
+  window.currentOrderId = null;
+}
+
 if (!window.viewOrder) {
 async function viewOrder(orderId) {
     try {
@@ -1368,7 +1372,7 @@ async function viewOrder(orderId) {
         }
         
         const order = result.data;
-        currentOrderId = order.id;
+        window.currentOrderId = order.id;
         
         // Mettre à jour le modal avec les détails de la commande
         document.getElementById('order-id').textContent = `#${order.id}`;
