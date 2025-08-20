@@ -20,18 +20,18 @@ export default defineConfig({
     // Configuration pour le routage côté client (SPA)
     // Cette configuration permet de rediriger toutes les requêtes vers index.html
     // pour permettre le routage côté client avec React Router
-    proxy: {
-      // Redirection des requêtes API vers le serveur backend sur le port 3004
+    proxy: process.env.NODE_ENV === 'development' ? {
+      // Redirection des requêtes API vers le serveur backend en développement
       '/api': {
         target: 'http://localhost:3004',
         changeOrigin: true,
         secure: false,
         rewrite: (path: string) => path,
-        configure: (proxy: any) => {
+        configure: (proxy, _options) => {
           proxy.on('error', (err: Error) => {
             console.error('Erreur du proxy:', err);
           });
-          proxy.on('proxyReq', (proxyReq: any) => {
+          proxy.on('proxyReq', (proxyReq) => {
             console.log('Requête proxy vers:', proxyReq.method, proxyReq.path);
             // Forcer les en-têtes pour éviter les problèmes CORS
             proxyReq.setHeader('host', 'localhost:3004');
@@ -40,7 +40,7 @@ export default defineConfig({
           });
         }
       }
-    }
+    } : undefined
   },
   // Configuration pour le routage côté client
   // Redirige toutes les requêtes vers index.html sauf pour les fichiers statiques
