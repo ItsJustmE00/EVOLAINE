@@ -1092,6 +1092,18 @@ let allOrders = [];
 let currentFilter = 'all';
 let currentSearchTerm = '';
 
+// Fonction appelée par la modal pour mettre à jour le statut sélectionné
+function updateSelectedOrderStatus() {
+    const select = document.getElementById('order-status');
+    if (!select) return;
+    const newStatus = select.value;
+    if (!currentOrderId) {
+        alert('ID de la commande introuvable');
+        return;
+    }
+    updateOrderStatus(currentOrderId, newStatus);
+}
+
 // Fonction utilitaire pour obtenir le nom de l'expéditeur d'un message
 function getMessageSenderName(message) {
     if (!message) return 'Expéditeur inconnu';
