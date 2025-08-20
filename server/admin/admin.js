@@ -1581,6 +1581,20 @@ async function viewOrder(orderId) {
         }).join('');
         
         // Afficher le modal
+        // Ajouter dynamiquement le bouton Imprimer si absent
+        try {
+            const completeBtn = modalEl.querySelector('#complete-order-btn');
+            if (completeBtn && completeBtn.parentNode && !completeBtn.parentNode.querySelector('#print-order-btn')) {
+                const printBtn = document.createElement('button');
+                printBtn.id = 'print-order-btn';
+                printBtn.className = 'flex items-center bg-indigo-600 text-white px-6 py-2 rounded hover:bg-indigo-700 mr-2';
+                printBtn.innerHTML = '<i class="fas fa-print mr-2"></i> Imprimer';
+                printBtn.addEventListener('click', () => printOrderDetails());
+                completeBtn.parentNode.insertBefore(printBtn, completeBtn.parentNode.firstChild);
+            }
+        } catch (e) {
+            console.warn('Impossible d\'ajouter le bouton Imprimer', e);
+        }
         document.getElementById('order-modal').classList.remove('hidden');
         document.body.classList.add('overflow-hidden');
         
