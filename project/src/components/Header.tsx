@@ -1,7 +1,7 @@
 import React, { useState, Suspense, useCallback, useEffect, useRef } from 'react';
 import { Menu, X, ShoppingBag, Loader2, Globe } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 
 // Chargement paresseux du composant ScrollingBanner
@@ -48,6 +48,7 @@ const Header: React.FC<HeaderProps> = () => {
   // @ts-ignore - Désactive la vérification de type pour éviter l'erreur d'instanciation profonde
   const tCommon = (key: string) => t(key as any);
   const location = useLocation();
+  const navigate = useNavigate();
   
   // Fonction pour faire défiler jusqu'à un élément avec un petit offset
   const scrollToElement = (id: string) => {
@@ -76,12 +77,12 @@ const Header: React.FC<HeaderProps> = () => {
         scrollToElement(sectionId);
       } else {
         // Si on n'est pas sur la page d'accueil, on y redirige avec le hash
-        window.location.href = `/#${sectionId}`;
+        navigate(`/#${sectionId}`);
       }
     } else {
       // Si pas de sectionId, c'est un retour à l'accueil
       if (location.pathname !== '/') {
-        window.location.href = '/';
+        navigate('/');
       } else {
         // Si on est déjà sur la page d'accueil, on scroll en haut
         window.scrollTo({
