@@ -2057,5 +2057,10 @@ window.deleteMessage = deleteMessage;
 window.closeModal = closeModal;
 window.closeMessageModal = closeMessageModal;
 window.displayOrders = displayOrders;
-}
+window.printOrderDetails = printOrderDetails;
 
+// S'assurer que printOrderDetails est disponible globalement
+if (typeof window !== 'undefined') {
+    window.printOrderDetails = printOrderDetails;
+}
+}
