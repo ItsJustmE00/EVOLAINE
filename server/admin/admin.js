@@ -1311,6 +1311,7 @@ async function loadMessages() {
 }
 
 // Afficher les détails d'une commande
+if (!window.viewOrder) {
 async function viewOrder(orderId) {
     try {
         const url = `${API_URL}/api/orders/${orderId}`;
