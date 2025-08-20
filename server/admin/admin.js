@@ -1120,6 +1120,10 @@ async function updateOrderStatus(orderId, newStatus) {
             modal.remove();
         }
         
+        // Recharger la liste des commandes pour refléter le nouveau statut
+        if (typeof loadOrders === 'function') {
+            loadOrders();
+        }
         // Rafraîchir le tableau de bord
         updateDashboard();
         
