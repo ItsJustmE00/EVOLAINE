@@ -197,6 +197,7 @@ io.on('connection', (socket) => {
   
   socket.on('ping', heartbeat);
   socket.on('pong', heartbeat);
+});
 
 
 // Fonction pour vérifier le token admin
