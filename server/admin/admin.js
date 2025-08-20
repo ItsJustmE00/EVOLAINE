@@ -925,7 +925,7 @@ async function viewOrder(orderId) {
         console.log(`Affichage des détails de la commande #${orderId}`);
         
         // Récupérer les détails complets de la commande
-        const response = await fetch(`${API_URL}/orders/${orderId}`);
+        const response = await fetch(`${API_URL}/api/orders/${orderId}`);
         
         if (!response.ok) {
             throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
@@ -1044,7 +1044,7 @@ async function updateOrderStatus(orderId, newStatus) {
     try {
         console.log(`Mise à jour du statut de la commande #${orderId} vers: ${newStatus}`);
         
-        const response = await fetch(`${API_URL}/orders/${orderId}/status`, {
+        const response = await fetch(`${API_URL}/api/orders/${orderId}/status`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -1582,7 +1582,7 @@ async function markAsRead() {
     if (!currentMessageId) return;
     
     try {
-        const response = await fetch(`${API_URL}/messages/${currentMessageId}/status`, {
+        const response = await fetch(`${API_URL}/api/messages/${currentMessageId}/status`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -1623,7 +1623,7 @@ async function deleteMessage(messageId) {
 
     try {
         console.log('Tentative de suppression du message ID:', messageId);
-        const response = await fetch(`${API_URL}/messages/${messageId}`, {
+        const response = await fetch(`${API_URL}/api/messages/${messageId}`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
@@ -1698,7 +1698,7 @@ async function deleteOrder() {
     }
 
     try {
-        const response = await fetch(`${API_URL}/orders/${currentOrderId}`, {
+        const response = await fetch(`${API_URL}/api/orders/${currentOrderId}`, {
             method: 'DELETE'
         });
 
