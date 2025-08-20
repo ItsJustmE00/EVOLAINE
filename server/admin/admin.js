@@ -1,6 +1,12 @@
 // Variables globales
-let currentOrderId = null;
-let currentMessageId = null;
+if (typeof window.currentOrderId === 'undefined') {
+  window.currentOrderId = null;
+}
+const currentOrderId = window.currentOrderId;
+if (typeof window.currentMessageId === 'undefined') {
+  window.currentMessageId = null;
+}
+const currentMessageId = window.currentMessageId;
 
 // Configuration de l'URL de l'API
 const API_BASE_URL = 'https://evolaine-backend.onrender.com';
@@ -1074,6 +1080,7 @@ async function viewOrder(orderId) {
                                         class="px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200">
                                     Annuler
                                 </button>
+                                <button onclick="deleteOrder(${order.id})" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Supprimer</button>
                                 <button onclick="updateOrderStatus(${order.id}, 'completed')" 
                                         class="px-4 py-2 bg-green-100 text-green-700 rounded hover:bg-green-200">
                                     Marquer comme terminée
@@ -1127,7 +1134,7 @@ async function updateOrderStatus(orderId, newStatus) {
         // Fermer la modal
         const modal = document.querySelector('.fixed.inset-0');
         if (modal) {
-            modal.remove();
+            modal.classList.add('hidden');
         }
         
         // Recharger la liste des commandes pour refléter le nouveau statut
@@ -1144,6 +1151,28 @@ async function updateOrderStatus(orderId, newStatus) {
         console.error('Erreur lors de la mise à jour du statut de la commande:', error);
         alert('Erreur lors de la mise à jour du statut de la commande');
     }
+}
+
+// Supprimer une commande
+async function deleteOrder(orderId) {
+  try {
+    if (!confirm(`Supprimer définitivement la commande #${orderId} ?`)) return;
+    const res = await fetch(`${API_URL}/api/orders/${orderId}`, {
+      method: 'DELETE'
+    });
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(txt || 'Erreur HTTP');
+    }
+    showNotification(`Commande #${orderId} supprimée`, 'success');
+    if (typeof loadOrders === 'function') {
+      await loadOrders();
+    }
+    updateDashboard();
+  } catch (err) {
+    console.error('Erreur suppression commande', err);
+    alert('Erreur suppression commande: ' + (err.message || err));
+  }
 }
 
 // Fonctions pour la gestion des commandes
