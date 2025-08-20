@@ -42,19 +42,19 @@ const Header: React.FC<HeaderProps> = () => {
 
   // Fonction d'aide pour les traductions avec des clés de navigation
   // @ts-ignore - Désactive la vérification de type pour éviter l'erreur d'instanciation profonde
-  const tNav = (key: string) => t(key);
+  const tNav = (key: string) => t(key as any);
   
   // Fonction d'aide pour les traductions communes
   // @ts-ignore - Désactive la vérification de type pour éviter l'erreur d'instanciation profonde
-  const tCommon = (key: string) => t(key);
+  const tCommon = (key: string) => t(key as any);
   const location = useLocation();
   
   // Fonction pour faire défiler jusqu'à un élément avec un petit offset
   const scrollToElement = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
-      const headerHeight = 80; // Hauteur approximative de la barre de navigation
-      const offset = 20; // Petit espace supplémentaire après la barre de navigation
+      const headerHeight = (document.querySelector('header') as HTMLElement)?.offsetHeight || 90; // hauteur réelle ou fallback
+      const offset = 40; // espace supplémentaire sous le header
       const elementPosition = element.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.pageYOffset - (headerHeight + offset);
 
