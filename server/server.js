@@ -381,9 +381,22 @@ app.post('/api/admin/login', (req, res) => {
     );
     
     res.json({ token });
-  } else {
-    res.status(401).json({ error: 'Identifiants invalides' });
   }
+
+  // Wrong creds
+  entry.count += 1;
+  const attempts = entry.count;
+  let lockDuration = 0;
+  if (attempts === 1) {
+    lockDuration = 60 * 1000; // 1 minute after first wrong attempt
+  } else if (attempts % 3 === 0) {
+    lockDuration = 60 * 60 * 1000; // 1h after every 3 wrong attempts
+  }
+  if (lockDuration) {
+    entry.lockUntil = Date.now() + lockDuration;
+  }
+
+  return res.status(401).json({ success: false, error: 'Identifiants invalides' });
 });
 
 // Middleware pour protéger les routes admin - DÉSACTIVÉ POUR LE DÉVELOPPEMENT
