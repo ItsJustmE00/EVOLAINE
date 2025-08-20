@@ -1235,6 +1235,31 @@ function closeModal() {
 }
 
 // Supprimer la commande actuellement ouverte dans le modal
+function printOrderDetails() {
+    const modal = document.getElementById('order-modal');
+    if (!modal) return;
+    const content = modal.querySelector('.bg-white');
+    if (!content) return;
+
+    // Ouvrir un nouvel onglet avec le contenu seulement
+    const printWindow = window.open('', '', 'width=800,height=900');
+    if (!printWindow) {
+        alert('Impossible d\'ouvrir la fenêtre d\'impression. Veuillez vérifier les bloqueurs de pop-up.');
+        return;
+    }
+    printWindow.document.write(`<!DOCTYPE html><html><head><title>Commande ${currentOrderId}</title>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+        <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+        <style>@media print{html,body{margin:0;padding:0}}</style>
+        </head><body>${content.innerHTML}</body></html>`);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+}
+
+window.printOrderDetails = printOrderDetails;
+
 function deleteCurrentOrder() {
     if (!currentOrderId) return;
     deleteOrder(currentOrderId);
