@@ -180,7 +180,7 @@
             </div>
 
             <!-- Order Details Modal -->
-            <div id="order-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-50 transition-opacity duration-300 ease-in-out flex items-center justify-center p-4" onclick="closeModal()">
+            <div id="order-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-50 transition-opacity duration-300 ease-in-out flex items-center justify-center p-4" onclick="if(event.target === this) closeModal()">
                 <div class="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-in-out scale-95 hover:scale-100 m-auto relative" onclick="event.stopPropagation()">
                     <div class="p-6">
                         <div class="flex justify-between items-center mb-4">
