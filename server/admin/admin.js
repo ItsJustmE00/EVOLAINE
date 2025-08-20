@@ -233,7 +233,8 @@ document.addEventListener('DOMContentLoaded', () => {
   socket.on('connect', () => {
     console.log(`[${formatTimestamp()}] 🌐 Connecté au serveur WebSocket avec l'ID:`, socket.id);
     updateConnectionStatus(true, 'Connexion au serveur établie');
-    joinAdminRoom();
+    // Defer joinAdminRoom until all functions are defined
+    window._shouldJoinAdminRoom = true;
   });
   
   // Déconnexion
@@ -1895,6 +1896,12 @@ function closeModal() {
 function closeMessageModal() {
     document.getElementById('message-modal').classList.add('hidden');
     document.body.classList.remove('overflow-hidden');
+}
+
+// Après le chargement de toutes les fonctions, si la connexion WebSocket est déjà prête
+if (window._shouldJoinAdminRoom && typeof joinAdminRoom === 'function') {
+  joinAdminRoom();
+  window._shouldJoinAdminRoom = false;
 }
 
 // Supprimer une commande
