@@ -630,9 +630,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             
             // Mettre à jour la liste des commandes si nécessaire
-            const activeSection = document.querySelector('.content-section.active');
-            const shouldUpdateOrders = activeSection && 
-                (activeSection.id === 'orders-section' || activeSection.id === 'dashboard');
+            const activeSection = document.querySelector('.content-section:not(.hidden)');
+            const shouldUpdateOrders = !activeSection || (activeSection.id === 'orders-section' || activeSection.id === 'dashboard');
                 
             if (shouldUpdateOrders) {
                 console.log('🔄 Mise à jour de la liste des commandes...');
