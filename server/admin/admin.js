@@ -1198,17 +1198,8 @@ if (typeof window !== 'undefined') {
 
 
 
-// Affichage des messages (stub minimal pour éviter erreur)
-function displayMessages(messages) {
-    const container = document.getElementById('messages-list');
-    if (!container) return;
-    if (!messages || messages.length === 0) {
-        container.innerHTML = '<p class="p-4 text-gray-500">Aucun message</p>';
-        return;
-    }
-    // TODO: construire la liste des messages
-    container.innerHTML = '<p class="p-4">' + messages.length + ' message(s)</p>';
-}
+// (supprimé: ancien stub displayMessages)
+
 
 // Fonctions pour la gestion des commandes
 var allOrders = [];
@@ -1423,7 +1414,8 @@ async function loadMessages() {
             throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
         }
         
-        const messages = await response.json();
+        const raw = await response.json();
+        const messages = raw && raw.data ? raw.data : raw;
         console.log('Messages reçus de l\'API:', messages);
         
         // Vérifier si le conteneur des messages existe
