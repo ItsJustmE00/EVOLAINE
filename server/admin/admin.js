@@ -192,6 +192,16 @@ function joinAdminRoom() {
         clearTimeout(reconnectTimeout);
         updateConnectionStatus(true, '✅ Connecté avec succès au panneau d\'administration');
         console.log(`[${formatTimestamp()}] ✅ Connecté à la room admin:`, response);
+        // Charger immédiatement les données du tableau de bord et des listes après connexion
+        if (typeof updateDashboard === 'function') {
+          updateDashboard();
+        }
+        if (typeof loadMessages === 'function') {
+          loadMessages();
+        }
+        if (typeof loadOrders === 'function') {
+          loadOrders();
+        }
       } else {
         console.error(`[${formatTimestamp()}] ❌ Échec de la connexion à la room admin:`, response);
         updateConnectionStatus(false, 'Échec de la connexion au panneau d\'administration');
