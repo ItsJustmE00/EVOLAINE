@@ -1403,7 +1403,9 @@ async function viewOrder(orderId) {
         modalEl.querySelector('#customer-address').textContent = [order.address, order.city].filter(Boolean).join(', ') || 'Adresse non spécifiée';
         modalEl.querySelector('#order-city').textContent = order.city || 'Ville non spécifiée';
         modalEl.querySelector('#order-notes').textContent = order.notes || 'Aucune note';
-        modalEl.querySelector('#order-status').value = order.status || 'pending';
+        // assurer que le select affiche l’étiquette FR correspondant au statut
+        const enToFr = { pending: 'Nouvelle', processing: 'En cours', completed: 'Terminée', cancelled: 'Annulée' };
+        modalEl.querySelector('#order-status').value = enToFr[order.status] || order.status || 'Nouvelle';
         modalEl.querySelector('#order-date').textContent = order.created_at ? new Date(order.created_at).toLocaleString() : 'Date inconnue';
         modalEl.querySelector('#order-total').textContent = order.total ? parseFloat(order.total).toFixed(2) : '0.00';
         
