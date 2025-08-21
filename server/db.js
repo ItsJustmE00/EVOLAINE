@@ -1,42 +1,36 @@
 const { Pool } = require('pg');
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 console.log('\n🔌 CHARGEMENT DE LA CONFIGURATION DE LA BASE DE DONNÉES');
-console.log('===============================================');
+console.log('================================================');
 
-// Configuration directe de la base de données
+console.log('🔧 CONFIGURATION DE LA CONNEXION À LA BASE DE DONNÉES');
+console.log('Environnement:', process.env.NODE_ENV || 'development');
+console.log('Hôte de la base de données:', process.env.DB_HOST);
+console.log('Nom de la base de données:', process.env.DB_NAME);
+console.log('Utilisateur de la base de données:', process.env.DB_USER);
+
+// Configuration de la connexion à la base de données
 const dbConfig = {
-  user: 'evolaine_user',
-  host: 'dpg-d2iicoemcj7s73ce7t40-a.frankfurt-postgres.render.com',
-  database: 'evolaine_pyal',
-  password: 'Ev3IK5xjDLB0IasN0XoaKZUhu8ZhR4hG',
-  port: 5432,
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
+  port: parseInt(process.env.DB_PORT || '5432', 10),
+  // Configuration SSL pour la production
+  ssl: process.env.NODE_ENV === 'production' ? { 
+    rejectUnauthorized: false,
+    sslmode: 'require'
+  } : false,
   // Paramètres du pool de connexions
   max: 20, // Nombre maximum de clients dans le pool
   connectionTimeoutMillis: 10000, // 10 secondes de délai de connexion
   idleTimeoutMillis: 30000, // Fermer les connexions inactives après 30 secondes
   query_timeout: 10000, // Timeout des requêtes (10 secondes)
   statement_timeout: 10000, // Timeout des instructions (10 secondes)
-  allowExitOnIdle: true, // Permettre la sortie quand le pool est inactif
-  // Configuration SSL pour Render.com
-  ssl: {
-    rejectUnauthorized: false // Nécessaire pour Render.com
-  }
+  allowExitOnIdle: true // Permettre la sortie quand le pool est inactif
 };
-
-console.log('Configuration de la base de données:');
-console.log('- Hôte:', dbConfig.host);
-console.log('- Port:', dbConfig.port);
-console.log('- Base de données:', dbConfig.database);
-console.log('- Utilisateur:', dbConfig.user);
-console.log('- SSL: Activé avec rejet non autorisé');
-
-// Afficher la configuration (sans le mot de passe pour des raisons de sécurité)
-console.log('Configuration de la base de données:');
-console.log('- Hôte:', dbConfig.host);
-console.log('- Port:', dbConfig.port);
-console.log('- Base de données:', dbConfig.database);
-console.log('- Utilisateur:', dbConfig.user);
-console.log('- SSL: Activé avec rejet non autorisé');
 
 // Créer le pool de connexions
 let pool;
@@ -150,55 +144,17 @@ async function testConnection() {
   }
 }
 
-// Vérifier le schéma (ajouter les colonnes manquantes si nécessaire)
+// Vérifier le schéma (ajouter la colonne full_name si elle n'existe pas encore)
 async function ensureSchema() {
-  const client = await pool.connect();
   try {
-    console.log('\n🔧 Vérification du schéma de la base de données...');
-    
-    // Vérifier et ajouter les colonnes manquantes
-    await client.query(`
-      DO $$
-      BEGIN
-        -- Ajouter full_name s'il n'existe pas
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                      WHERE table_name='messages' AND column_name='full_name') THEN
-          ALTER TABLE messages ADD COLUMN full_name VARCHAR(255);
-          RAISE NOTICE 'Colonne full_name ajoutée avec succès';
-        END IF;
-        
-        -- Ajouter name s'il n'existe pas
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                      WHERE table_name='messages' AND column_name='name') THEN
-          ALTER TABLE messages ADD COLUMN name VARCHAR(255);
-          RAISE NOTICE 'Colonne name ajoutée avec succès';
-        END IF;
-        
-        -- Mettre à jour name à partir de full_name si nécessaire
-        UPDATE messages SET name = full_name WHERE name IS NULL AND full_name IS NOT NULL;
-        
-        -- Vérifier si la colonne email existe avant de tenter de la modifier
-        IF EXISTS (SELECT 1 FROM information_schema.columns 
-                  WHERE table_name='messages' AND column_name='email') THEN
-          -- Essayer de rendre la colonne nullable si elle ne l'est pas déjà
-          BEGIN
-            ALTER TABLE messages ALTER COLUMN email DROP NOT NULL;
-            RAISE NOTICE 'Contrainte NOT NULL supprimée de la colonne email';
-          EXCEPTION WHEN others THEN
-            RAISE NOTICE 'Impossible de modifier la colonne email: %', SQLERRM;
-          END;
-        END IF;
-        
-        RAISE NOTICE 'Vérification du schéma terminée avec succès';
-      END $$;
-    `);
-    
-    console.log('✅ Schéma de la base de données vérifié avec succès');
+    console.log('\n🔧 Vérification du schéma de la base de données (table messages)...');
+    await pool.query(`ALTER TABLE IF EXISTS messages ADD COLUMN IF NOT EXISTS full_name VARCHAR(255);`);
+    await pool.query(`ALTER TABLE IF EXISTS messages ADD COLUMN IF NOT EXISTS name VARCHAR(255);`);
+    await pool.query(`UPDATE messages SET name = full_name WHERE name IS NULL;`);
+    await pool.query(`ALTER TABLE IF EXISTS messages ALTER COLUMN email DROP NOT NULL;`);
+    console.log('✅ Schéma vérifié / colonne full_name OK');
   } catch (err) {
-    console.error('❌ Erreur lors de la vérification du schéma:', err.message);
-    // Ne pas échouer complètement, continuer quand même
-  } finally {
-    client.release();
+    console.error('❌ Erreur lors de la vérification/ajout de la colonne full_name:', err.message);
   }
 }
 
