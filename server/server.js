@@ -52,6 +52,32 @@ console.log('Création de l\'application Express...');
 const app = express();
 const PORT = process.env.PORT || 3004;
 
+// Configuration CORS globale
+app.use(cors({
+  origin: function(origin, callback) {
+    // En développement, autoriser toutes les origines
+    if (process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
+    
+    // En production, vérifier l'origine
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'https://evolaine.vercel.app',
+      'https://evolaine-backend.onrender.com'
+    ];
+    
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 // Création du serveur HTTP
 const server = http.createServer(app);
 
@@ -215,6 +241,50 @@ function verifyAdminToken(token) {
     return false;
   }
 }
+
+// Configuration des fichiers statiques
+console.log('🔧 Configuration des fichiers statiques...');
+
+// Servir les fichiers statiques du dossier admin
+app.use('/admin', express.static(path.join(__dirname, 'admin'), {
+  setHeaders: (res, filePath) => {
+    const extname = path.extname(filePath).toLowerCase();
+    const mimeTypes = {
+      '.js': 'application/javascript',
+      '.css': 'text/css',
+      '.html': 'text/html',
+      '.json': 'application/json',
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.gif': 'image/gif',
+      '.svg': 'image/svg+xml',
+      '.woff': 'application/font-woff',
+      '.woff2': 'application/font-woff2',
+      '.ttf': 'application/font-ttf',
+      '.eot': 'application/vnd.ms-fontobject'
+    };
+    
+    const contentType = mimeTypes[extname] || 'application/octet-stream';
+    res.setHeader('Content-Type', contentType);
+    
+    // Désactiver la mise en cache pour les fichiers de développement
+    if (process.env.NODE_ENV !== 'production') {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    }
+  }
+}));
+
+// Route pour servir login.html directement
+app.get('/admin/login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin', 'login.html'), {
+    headers: {
+      'Content-Type': 'text/html'
+    }
+  });
+});
 
 // Configuration CORS
 console.log('🔧 Configuration CORS...');
@@ -418,16 +488,24 @@ app.post('/api/admin/login', (req, res) => {
 
 // Middleware pour protéger les routes admin
 function adminAuth(req, res, next) {
-    // Si la requête est pour la page de login, la laisser passer
-    if (req.path === '/login' || req.path === '/login.html' || req.path === '/admin/login') {
-        return next();
+    // Gérer les requêtes OPTIONS pour CORS
+    if (req.method === 'OPTIONS') {
+        res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+        return res.status(200).end();
     }
-    
-    // Si la requête est pour une ressource statique, la laisser passer
+
+    // Autoriser l'accès aux fichiers statiques et à la page de login
     if (req.path.startsWith('/css/') || 
         req.path.startsWith('/js/') || 
         req.path.startsWith('/img/') ||
-        req.path === '/favicon.ico') {
+        req.path === '/favicon.ico' ||
+        req.path === '/admin/login' ||
+        req.path === '/admin/login.html' ||
+        req.path === '/api/admin/login' ||
+        req.path === '/api/admin/verify-token') {
         return next();
     }
     
@@ -447,7 +525,10 @@ function adminAuth(req, res, next) {
     // Si pas de token et que c'est une API, retourner une erreur
     if (!token) {
         if (req.path.startsWith('/api/')) {
-            return res.status(401).json({ error: 'Token d\'authentification requis' });
+            return res.status(401).json({ 
+                success: false,
+                error: 'Token d\'authentification requis' 
+            });
         } else {
             // Rediriger vers la page de login pour les pages web
             return res.redirect('/admin/login');
