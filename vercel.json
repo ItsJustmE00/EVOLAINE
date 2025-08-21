@@ -5,8 +5,7 @@
       "src": "project/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "dist",
-        "outputDirectory": "dist"
+        "distDir": "dist"
       }
     },
     {
@@ -39,11 +38,5 @@
       "src": "/(.*)",
       "dest": "/project/dist/index.html"
     }
-  ],
-  "env": {
-    "NODE_ENV": "production",
-    "VITE_API_BASE_URL": "https://evolaine-backend.onrender.com"
-  },
-  "buildCommand": "cd project && npm install && npm run build",
-  "outputDirectory": "project/dist"
+  ]
 }

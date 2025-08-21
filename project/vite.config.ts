@@ -13,6 +13,28 @@ export default defineConfig({
   plugins: [react()],
   // Configuration de base pour les chemins d'accès
   base: isProduction ? '/' : '/',
+  
+  // Configuration du build
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    sourcemap: isDevelopment,
+    minify: isProduction ? 'esbuild' : false,
+    emptyOutDir: true,
+    // Configuration minimale pour le build
+    rollupOptions: {
+      output: {
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash][extname]',
+      }
+    },
+    // Cibler des navigateurs modernes
+    target: 'es2015',
+    // Activer le code splitting
+    cssCodeSplit: true
+  },
+
   // Configuration du serveur de développement
   server: {
     port: 3000,
@@ -23,6 +45,11 @@ export default defineConfig({
     fs: {
       strict: false,
       allow: ['..']
+    },
+    // Configuration des en-têtes
+    headers: {
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+      'Cross-Origin-Opener-Policy': 'same-origin',
     },
     // Configuration du proxy pour le développement
     proxy: isDevelopment ? {
@@ -47,28 +74,21 @@ export default defineConfig({
       }
     } : undefined
   },
-  // Configuration pour le routage côté client
-  // Redirige toutes les requêtes vers index.html sauf pour les fichiers statiques
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks: undefined,
-        // Configuration pour copier les fichiers statiques dans le dossier de build
-        assetFileNames: 'assets/[name]-[hash][extname]',
-      },
-    },
-    // Copier les fichiers statiques du dossier public dans le dossier de build
-    assetsInlineLimit: 0,
-    copyPublicDir: true,
-  },
+  
+  // Configuration du serveur de prévisualisation
   preview: {
     port: 3000,
     host: '0.0.0.0',
     strictPort: true
   },
+  
+  // Configuration des alias de chemins
   resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
-    }
+    alias: [
+      {
+        find: '@',
+        replacement: fileURLToPath(new URL('./src', import.meta.url))
+      }
+    ]
   }
 });

@@ -9,15 +9,46 @@ if (typeof window.currentMessageId === 'undefined') {
 let currentMessageId = window.currentMessageId;
 
 // Configuration de l'URL de l'API
-const API_BASE_URL = 'https://evolaine-backend.onrender.com';
+const API_BASE_URL = window.location.origin;
 const API_URL = API_BASE_URL;
 
 // === Auth ===
 
-// Désactive l'authentification : accès libre au panneau admin
+// Vérifier l'authentification de l'administrateur
 async function ensureAdminAuth() {
-  console.log('🔓 Auth admin désactivée – accès sans connexion');
-  return;
+    // Vérifier si un token est présent dans le localStorage ou sessionStorage
+    const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
+    
+    if (!token) {
+        // Rediriger vers la page de connexion si aucun token n'est trouvé
+        window.location.href = '/admin/login';
+        return false;
+    }
+
+    try {
+        // Vérifier la validité du token
+        const response = await fetch(`${API_URL}/api/admin/verify-token`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok || !data.valid) {
+            // Supprimer le token invalide et rediriger vers la page de connexion
+            localStorage.removeItem('adminToken');
+            sessionStorage.removeItem('adminToken');
+            window.location.href = '/admin/login';
+            return false;
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('Erreur de vérification du token:', error);
+        window.location.href = '/admin/login';
+        return false;
+    }
 }
 
 // Exécuter l'auth avant le reste

@@ -379,10 +379,17 @@ app.post('/api/admin/login', (req, res) => {
     return res.status(429).json({ success: false, error: `Trop de tentatives. Réessayez dans ${retryAfter}s` });
   }
 
-  const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'EVOLAINE';
-  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'TAHR1TAHR1';
+    // Support multiple admin comptes via env ADMIN_ACCOUNTS="user:pass,user2:pass2"
+  const ADMIN_ACCOUNTS_RAW = process.env.ADMIN_ACCOUNTS || '';
+  const adminPairs = ADMIN_ACCOUNTS_RAW.split(',').filter(Boolean).map(pair => {
+    const [u, p] = pair.split(':');
+    return { u, p };
+  });
+  adminPairs.push({ u: process.env.ADMIN_USERNAME || 'EVOLAINE', p: process.env.ADMIN_PASSWORD || 'TAHR1TAHR1' });
 
-  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+  const isValid = adminPairs.some(acc => acc.u === username && acc.p === password);
+
+  if (isValid) {
     // Réinitialiser le compteur après un succès
     loginAttempts[ip] = { count: 0, lockUntil: 0 };
 
@@ -409,28 +416,72 @@ app.post('/api/admin/login', (req, res) => {
 
   
 
-// Middleware pour protéger les routes admin - DÉSACTIVÉ POUR LE DÉVELOPPEMENT
+// Middleware pour protéger les routes admin
 function adminAuth(req, res, next) {
-  // Autoriser tout le monde en développement
-  console.log('Accès admin autorisé (mode développement)');
-  next();
-  
-  /* Ancien code d'authentification
-  // Vérifier si le token est dans les en-têtes
-  const token = req.headers['x-access-token'] || req.headers['authorization'];
-  
-  if (token && verifyAdminToken(token)) {
-    next();
-  } else {
-    res.status(403).json({ error: 'Accès non autorisé' });
-  }
-  */
-  next();
-};
+    // Si la requête est pour la page de login, la laisser passer
+    if (req.path === '/login' || req.path === '/login.html' || req.path === '/admin/login') {
+        return next();
+    }
+    
+    // Si la requête est pour une ressource statique, la laisser passer
+    if (req.path.startsWith('/css/') || 
+        req.path.startsWith('/js/') || 
+        req.path.startsWith('/img/') ||
+        req.path === '/favicon.ico') {
+        return next();
+    }
+    
+    // Récupérer le token de l'en-tête Authorization ou des cookies
+    let token = null;
+    
+    // Vérifier l'en-tête Authorization
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.split(' ')[1];
+    }
+    // Vérifier le cookie d'authentification
+    else if (req.cookies && req.cookies.adminToken) {
+        token = req.cookies.adminToken;
+    }
+    
+    // Si pas de token et que c'est une API, retourner une erreur
+    if (!token) {
+        if (req.path.startsWith('/api/')) {
+            return res.status(401).json({ error: 'Token d\'authentification requis' });
+        } else {
+            // Rediriger vers la page de login pour les pages web
+            return res.redirect('/admin/login');
+        }
+    }
+    
+    // Vérifier le token
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        req.user = decoded;
+        // Si le token est valide, continuer vers la route demandée
+        return next();
+    } catch (error) {
+        console.error('Erreur de vérification du token:', error);
+        
+        if (req.path.startsWith('/api/')) {
+            return res.status(401).json({ error: 'Token invalide ou expiré' });
+        } else {
+            // Rediriger vers la page de login avec un message d'erreur
+            return res.redirect('/admin/login?error=session_expired');
+        }
+    }
+}
 
 // Appliquer le middleware d'authentification à toutes les routes /admin
 app.use('/admin', adminAuth);
-app.use('/api/admin', adminAuth);
+app.use('/api/admin', (req, res, next) => {
+    // Laisser passer les routes de login et de vérification de token
+    if (req.path === '/login' || req.path === '/verify-token') {
+        return next();
+    }
+    // Pour toutes les autres routes API admin, appliquer l'authentification
+    return adminAuth(req, res, next);
+});
 
 // Middleware pour logger les requêtes
 app.use((req, res, next) => {
@@ -612,6 +663,80 @@ async function initializeDatabase() {
 
 // L'initialisation de la base de données est déjà appelée dans le callback de connexion à la base de données
 // Pas besoin d'appeler initializeDatabase() ici car elle est déjà appelée après une connexion réussie
+
+// Routes d'authentification admin
+app.post('/api/admin/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        
+        // Vérification des identifiants (à remplacer par une vérification sécurisée en production)
+        // En production, utilisez bcrypt pour hacher et vérifier les mots de passe
+        if (username === 'evolaine' && password === 'tahrtahr11') {
+            // Créer un token JWT valide pour 24 heures
+            const token = jwt.sign(
+                { username, role: 'admin' },
+                JWT_SECRET,
+                { expiresIn: '24h' }
+            );
+            
+            return res.json({
+                success: true,
+                token,
+                user: { username, role: 'admin' }
+            });
+        } else {
+            return res.status(401).json({
+                success: false,
+                error: 'Identifiants invalides'
+            });
+        }
+    } catch (error) {
+        console.error('Erreur lors de la connexion admin:', error);
+        return res.status(500).json({
+            success: false,
+            error: 'Erreur lors de la connexion'
+        });
+    }
+});
+
+// Vérification du token admin
+app.get('/api/admin/verify-token', (req, res) => {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.json({ valid: false });
+        }
+        
+        const token = authHeader.split(' ')[1];
+        if (!token) {
+            return res.json({ valid: false });
+        }
+        
+        // Vérifier le token
+        jwt.verify(token, JWT_SECRET, (err, decoded) => {
+            if (err) {
+                return res.json({ valid: false });
+            }
+            
+            // Vérifier si le token a expiré
+            const now = Math.floor(Date.now() / 1000);
+            if (decoded.exp < now) {
+                return res.json({ valid: false });
+            }
+            
+            return res.json({ 
+                valid: true,
+                user: {
+                    username: decoded.username,
+                    role: decoded.role
+                }
+            });
+        });
+    } catch (error) {
+        console.error('Erreur de vérification du token:', error);
+        return res.status(500).json({ valid: false });
+    }
+});
 
 // Configuration du dossier des fichiers statiques
 app.use(express.static(path.join(__dirname, 'public')));
