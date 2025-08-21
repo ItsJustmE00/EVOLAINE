@@ -57,6 +57,20 @@ const About: React.FC = () => {
                 <p className="text-gray-600">{t('about.features.local.subtitle')}</p>
               </div>
             </div>
+
+            {/* Vidéo – affichée sous les 4 blocs sur mobile/tablette */}
+            <div className="mt-10 w-full block lg:hidden">
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full rounded-xl shadow-xl"
+              >
+                <source src="/videos/123.mp4" type="video/mp4" />
+                Votre navigateur ne supporte pas la lecture de vidéos.
+              </video>
+            </div>
           </div>
           
           {/* Colonne de droite - Vidéo */}
