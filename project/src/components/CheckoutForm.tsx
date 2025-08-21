@@ -88,11 +88,19 @@ const CheckoutForm = () => {
     const newErrors: Record<string, string> = {};
     let isValid = true;
     
+    const phoneRegex = /^(06|07)\d{8}$/;
+
     fields.forEach(field => {
       const value = formData[field.name as keyof FormValues] || '';
       if (field.required && !value.toString().trim()) {
         newErrors[field.name] = t('checkout.fieldRequired', 'Ce champ est requis');
         isValid = false;
+      } else if (field.name === 'phone') {
+        const sanitized = value.toString().replace(/\s+/g, '');
+        if (!phoneRegex.test(sanitized)) {
+          newErrors[field.name] = t('checkout.invalidPhone', 'Veuillez entrer un numéro de téléphone valide');
+          isValid = false;
+        }
       }
     });
     

@@ -199,7 +199,7 @@ const Footer = () => {
               <li className="flex items-start space-x-3">
                 <Phone className="h-5 w-5 text-red-900 mt-0.5 flex-shrink-0" />   
                 <div>
-                  <p className="text-black" dir="ltr" style={{ unicodeBidi: 'bidi-override' }}>06 59 55 37 41</p>
+                  <p className="text-black" dir="ltr" style={{ unicodeBidi: 'bidi-override' }}>0623085237</p>
                   <p className="text-sm text-black">
                     {isRTL 
                       ? 'متوفر طوال الأسبوع من الساعة 9 صباحاً حتى 8 مساءً'

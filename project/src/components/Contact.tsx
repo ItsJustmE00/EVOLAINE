@@ -148,7 +148,7 @@ const Contact = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-2">{isRTL ? 'الهاتف' : 'Téléphone'}</h3>
-                  <p className="text-gray-600" dir="ltr" style={{ unicodeBidi: 'bidi-override' }}>+212 6 59 55 37 41</p>
+                  <p className="text-gray-600" dir="ltr" style={{ unicodeBidi: 'bidi-override' }}>+212 6 23 08 52 37</p>
                   <p className="text-gray-600">{isRTL ? 'الاثنين - الجمعة: 9 ص - 6 م' : 'Lun - Ven: 9h - 18h'}</p>
                 </div>
               </div>

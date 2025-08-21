@@ -40,6 +40,14 @@ const CartPage = () => {
       return;
     }
     
+    // Validation du numéro de téléphone
+    const phoneRegex = /^(06|07)\d{8}$/;
+    const sanitizedPhone = formData.phone.replace(/\s+/g, '');
+    if (!phoneRegex.test(sanitizedPhone)) {
+      alert(t('checkout.invalidPhone', 'Veuillez entrer un numéro de téléphone valide'));
+      return;
+    }
+
     // Préparer les données de la commande
     const orderData = {
       ...formData,

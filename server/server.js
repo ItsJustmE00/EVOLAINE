@@ -765,6 +765,11 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Le serveur fonctionne correctement' });
 });
 
+// Route racine simple pour Render
+app.get('/', (req, res) => {
+  res.json({ success: true, message: 'Evolaine backend is running 🎉' });
+});
+
 // Endpoint temporaire pour vérifier les villes
 app.get('/api/debug/cities', (req, res) => {
   db.all('SELECT * FROM cities', [], (err, rows) => {
