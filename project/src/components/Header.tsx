@@ -55,7 +55,7 @@ const Header: React.FC<HeaderProps> = () => {
     const element = document.getElementById(id);
     if (element) {
       const headerHeight = (document.querySelector('header') as HTMLElement)?.offsetHeight || 90; // hauteur réelle ou fallback
-      const offset = 40; // espace supplémentaire sous le header
+      const offset = 0; // alignement précis sous le header
       const elementPosition = element.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.pageYOffset - (headerHeight + offset);
 

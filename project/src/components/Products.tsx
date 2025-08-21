@@ -395,7 +395,9 @@ const Products = () => {
                     </span>
                     
                     <div className="text-sm font-semibold text-green-700">
-                      {t('products.shipping' as any, 'Livraison gratuite')}
+                      {product.id === 1 
+                        ? t('products.shipping' as any, 'Livraison gratuite')
+                        : t('products.shipping20' as any, 'Livraison 20 DH')}
                     </div>
                   </div>
                 </div>
