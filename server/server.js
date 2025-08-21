@@ -1398,6 +1398,41 @@ app.post('/api/orders', async (req, res) => {
 });
 
 // Récupérer toutes les commandes
+
+/**
+ * Récupérer toutes les commandes du jour
+ * GET /api/orders/today
+ * Accès : Admin uniquement
+ */
+// Route publique pour l'impression des commandes du jour depuis le panneau admin
+app.get('/api/orders/today', async (req, res) => {
+  try {
+    const sql = `
+      SELECT *
+      FROM orders
+      WHERE created_at::date = CURRENT_DATE
+      ORDER BY created_at
+    `;
+
+    const { rows } = await pool.query(sql);
+
+    return res.json({
+      success: true,
+      count: rows.length,
+      data: rows
+    });
+  } catch (err) {
+    console.error('Erreur lors de la récupération des commandes du jour:', err);
+    return res.status(500).json({
+      success: false,
+      error: 'Erreur lors de la récupération des commandes du jour',
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+  }
+});
+
+// -----------------------------------------------------------------------------
+// Récupérer toutes les commandes
 app.get('/api/orders', async (req, res) => {
   console.log('\n=== DEMANDE DE RÉCUPÉRATION DES COMMANDES ===');
   console.log('Méthode:', req.method);

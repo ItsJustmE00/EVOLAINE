@@ -441,6 +441,98 @@ console.log('🌐 URL de l\'API configurée sur:', API_URL);
 // Log de débogage
 console.log('admin.js chargé avec succès');
 
+// -----------------------------------------------------------------------------
+// Fonction pour imprimer les commandes du jour
+async function printTodayOrders() {
+  try {
+    console.log('📄 Récupération des commandes du jour...');
+    const response = await fetch(`${API_URL}/api/orders/today`);
+    if (!response.ok) {
+      throw new Error(`Erreur HTTP ${response.status}`);
+    }
+    const data = await response.json();
+    if (!data || !data.data) {
+      throw new Error('Format de réponse inattendu');
+    }
+
+    // Générer le contenu HTML imprimable
+    const orders = data.data;
+    const htmlContent = `
+      <html>
+        <head>
+          <title>Commandes du jour</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; }
+            th { background-color: #f4f4f4; }
+            h1 { text-align: center; margin-bottom: 20px; }
+          </style>
+        </head>
+        <body>
+          <h1>Commandes du ${new Date().toLocaleDateString()}</h1>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nom</th>
+                <th>Prénom</th>
+                <th>Adresse</th>
+                <th>Ville</th>
+                <th>Produits</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${orders.map(o => `
+                <tr>
+                  <td>${o.id}</td>
+                  <td>${o.last_name}</td>
+                  <td>${o.first_name}</td>
+                  <td>${o.address}</td>
+                  <td>${o.city}</td>
+                  <td>${(o.items || []).map(it => `${it.name} (${it.quantity} × ${it.price} DH)`).join('<br/>')}</td>
+                  <td>${o.total} DH</td>
+                  <td>${o.status}</td>
+                  <td>${new Date(o.created_at).toLocaleString()}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </body>
+      </html>`;
+
+    // Ouvrir une nouvelle fenêtre et imprimer
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Popup bloquée. Veuillez autoriser les popups pour imprimer.');
+      return;
+    }
+    printWindow.document.open();
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+  } catch (err) {
+    console.error('Erreur lors de l\'impression des commandes du jour:', err);
+    showNotification('Erreur lors de l\'impression des commandes', 'error');
+  }
+}
+
+// Ajouter le listener après le chargement du DOM
+document.addEventListener('DOMContentLoaded', () => {
+  const printBtn = document.getElementById('print-today-orders');
+  if (printBtn) {
+    printBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      printTodayOrders();
+    });
+  }
+});
+
 // Initialisation de l'interface
 // Fonction pour mettre à jour les compteurs du tableau de bord
 async function updateDashboardCounters() {

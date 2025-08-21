@@ -54,10 +54,14 @@ const Header: React.FC<HeaderProps> = () => {
   const scrollToElement = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
-      const headerHeight = (document.querySelector('header') as HTMLElement)?.offsetHeight || 90; // hauteur réelle ou fallback
-      const offset = 0; // alignement précis sous le header
+      const headerEl = document.querySelector('header') as HTMLElement | null;
+      const headerHeight = headerEl ? headerEl.getBoundingClientRect().height : 90;
+      // Sur mobile, on ajoute la hauteur potentielle de la barre de status/URL qui n'est pas comptée
+      // Décale légèrement vers le haut sur mobile pour coller le titre
+      const mobileExtra = window.innerWidth <= 768 ? -20 : 0;
+      const offset = window.innerWidth <= 768 ? -240 : 0; // remonte de 30px sur mobile
       const elementPosition = element.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - (headerHeight + offset);
+      const offsetPosition = elementPosition + window.pageYOffset - (headerHeight + offset + mobileExtra);
 
       window.scrollTo({
         top: offsetPosition,
@@ -76,8 +80,8 @@ const Header: React.FC<HeaderProps> = () => {
         // Si on est sur la page d'accueil, on fait défiler
         scrollToElement(sectionId);
       } else {
-        // Si on n'est pas sur la page d'accueil, on y redirige avec le hash
-        navigate(`/#${sectionId}`);
+        // Si on n'est pas sur la page d'accueil, on force une navigation complète
+        window.location.href = `/#${sectionId}`;
       }
     } else {
       // Si pas de sectionId, c'est un retour à l'accueil

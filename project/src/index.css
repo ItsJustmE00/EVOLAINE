@@ -83,6 +83,11 @@ html, body {
 
 /* Style pour le corps quand une modale est ouverte */
 
+/* Alignement ancre par défaut (desktop/tablette) */
+section[id] {
+  scroll-margin-top: 7rem; /* ≈112px : header + bannière */
+}
+
 /* --------------------------------------------------
    Amélioration : Positionnement précis lors de la
    navigation vers une section (#ancre) sur petits
@@ -93,7 +98,7 @@ html, body {
 @media (max-width: 768px) {
   /* Toutes les sections ciblables par un id bénéficient de la marge */
   section[id] {
-    scroll-margin-top: 6.5rem; /* ≈104px, correspond à la hauteur totale du header + bannière */
+    scroll-margin-top: 1rem; /* 16px */ /* ≈48px, alignement plus précis */ /* ajustement fin pour que le titre soit collé au header */ /* ≈80px, correspond à la hauteur du header sur mobile */ /* ≈104px, correspond à la hauteur totale du header + bannière */
   }
 }
 
