@@ -1,36 +1,42 @@
 const { Pool } = require('pg');
-const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 console.log('\n🔌 CHARGEMENT DE LA CONFIGURATION DE LA BASE DE DONNÉES');
-console.log('================================================');
+console.log('===============================================');
 
-console.log('🔧 CONFIGURATION DE LA CONNEXION À LA BASE DE DONNÉES');
-console.log('Environnement:', process.env.NODE_ENV || 'development');
-console.log('Hôte de la base de données:', process.env.DB_HOST);
-console.log('Nom de la base de données:', process.env.DB_NAME);
-console.log('Utilisateur de la base de données:', process.env.DB_USER);
-
-// Configuration de la connexion à la base de données
+// Configuration directe de la base de données
 const dbConfig = {
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASSWORD,
-  port: parseInt(process.env.DB_PORT || '5432', 10),
-  // Configuration SSL pour la production
-  ssl: process.env.NODE_ENV === 'production' ? { 
-    rejectUnauthorized: false,
-    sslmode: 'require'
-  } : false,
+  user: 'evolaine_user',
+  host: 'dpg-d2iicoemcj7s73ce7t40-a.frankfurt-postgres.render.com',
+  database: 'evolaine_pyal',
+  password: 'Ev3IK5xjDLB0IasN0XoaKZUhu8ZhR4hG',
+  port: 5432,
   // Paramètres du pool de connexions
   max: 20, // Nombre maximum de clients dans le pool
   connectionTimeoutMillis: 10000, // 10 secondes de délai de connexion
   idleTimeoutMillis: 30000, // Fermer les connexions inactives après 30 secondes
   query_timeout: 10000, // Timeout des requêtes (10 secondes)
   statement_timeout: 10000, // Timeout des instructions (10 secondes)
-  allowExitOnIdle: true // Permettre la sortie quand le pool est inactif
+  allowExitOnIdle: true, // Permettre la sortie quand le pool est inactif
+  // Configuration SSL pour Render.com
+  ssl: {
+    rejectUnauthorized: false // Nécessaire pour Render.com
+  }
 };
+
+console.log('Configuration de la base de données:');
+console.log('- Hôte:', dbConfig.host);
+console.log('- Port:', dbConfig.port);
+console.log('- Base de données:', dbConfig.database);
+console.log('- Utilisateur:', dbConfig.user);
+console.log('- SSL: Activé avec rejet non autorisé');
+
+// Afficher la configuration (sans le mot de passe pour des raisons de sécurité)
+console.log('Configuration de la base de données:');
+console.log('- Hôte:', dbConfig.host);
+console.log('- Port:', dbConfig.port);
+console.log('- Base de données:', dbConfig.database);
+console.log('- Utilisateur:', dbConfig.user);
+console.log('- SSL: Activé avec rejet non autorisé');
 
 // Créer le pool de connexions
 let pool;

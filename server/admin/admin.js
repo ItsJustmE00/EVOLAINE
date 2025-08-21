@@ -448,7 +448,6 @@ console.log('🌐 URL de l\'API configurée sur:', API_URL);
 // Log de débogage
 console.log('admin.js chargé avec succès');
 
-// Initialisation de l'interface
 // Fonction pour mettre à jour les compteurs du tableau de bord
 async function updateDashboardCounters() {
   try {
@@ -456,7 +455,8 @@ async function updateDashboardCounters() {
     const response = await fetch(`${API_URL}/api/stats/overview`);
     
     if (!response.ok) {
-      throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
+      const errorText = await response.text();
+      throw new Error(`Erreur HTTP ${response.status}: ${response.statusText} - ${errorText}`);
     }
     
     const data = await response.json();
@@ -464,26 +464,34 @@ async function updateDashboardCounters() {
     
     // Mettre à jour les compteurs du tableau de bord
     if (data) {
-      // Mettre à jour le nombre de nouvelles commandes
+      // Mettre à jour le nombre de nouvelles commandes (commandes en attente)
       const newOrdersElement = document.getElementById('new-orders-count');
       if (newOrdersElement) {
-        // Utiliser data.newOrders pour les nouvelles commandes
-        const newOrdersCount = data.newOrders || 0;
-        newOrdersElement.textContent = newOrdersCount;
-        console.log('🔢 Compteur de nouvelles commandes mis à jour:', newOrdersCount);
+        const pendingOrders = data.orders?.pending || 0;
+        newOrdersElement.textContent = pendingOrders;
+        console.log('🔢 Compteur de nouvelles commandes mis à jour:', pendingOrders);
       }
       
       // Mettre à jour le nombre de messages non lus
       const unreadMessagesElement = document.getElementById('unread-messages-count');
       if (unreadMessagesElement) {
-        unreadMessagesElement.textContent = data.unreadMessages || 0;
+        const unreadCount = data.messages?.unread || 0;
+        unreadMessagesElement.textContent = unreadCount;
+        console.log('📩 Compteur de messages non lus mis à jour:', unreadCount);
       }
       
       // Mettre à jour le chiffre d'affaires
       const revenueElement = document.getElementById('revenue');
       if (revenueElement) {
-        const revenue = parseFloat(data.revenue || 0);
+        const revenue = parseFloat(data.orders?.revenue || 0);
         revenueElement.textContent = `${revenue.toFixed(2)} DH`;
+        console.log('💰 Chiffre d\'affaires mis à jour:', revenue);
+      }
+      
+      // Mettre à jour les commandes récentes si la fonction existe
+      if (data.orders?.recent && typeof displayRecentOrders === 'function') {
+        console.log('Mise à jour des commandes récentes...');
+        displayRecentOrders(data.orders.recent);
       }
     }
     
@@ -894,7 +902,7 @@ async function updateDashboard() {
         if (!response.ok) {
             const errorText = await response.text();
             console.error('Erreur de réponse du serveur:', errorText);
-            throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
+            throw new Error(`Erreur HTTP ${response.status}: ${response.statusText} - ${errorText}`);
         }
         const stats = await response.json();
         console.log('Statistiques reçues:', stats);
@@ -903,13 +911,14 @@ async function updateDashboard() {
         console.log('Détails des statistiques reçues:', JSON.stringify(stats, null, 2));
         
         // Mettre à jour les compteurs avec la structure des données reçues
-        // La route renvoie { newOrders, unreadMessages, revenue, recentOrders }
-        const newOrdersCount = stats.newOrders || 0;
-        const unreadMessagesCount = stats.unreadMessages || 0;
-        const revenue = stats.revenue || 0;
+        // La route renvoie { orders: { pending, revenue, recent }, messages: { unread } }
+        const pendingOrders = stats.orders?.pending || 0;
+        const unreadMessages = stats.messages?.unread || 0;
+        const revenue = stats.orders?.revenue || 0;
+        const recentOrders = stats.orders?.recent || [];
         
-        console.log('Nouvelles commandes:', newOrdersCount);
-        console.log('Messages non lus:', unreadMessagesCount);
+        console.log('Commandes en attente:', pendingOrders);
+        console.log('Messages non lus:', unreadMessages);
         console.log('Chiffre d\'affaires:', revenue);
         
         // Mettre à jour les éléments du DOM
@@ -917,16 +926,20 @@ async function updateDashboard() {
         const unreadMessagesElement = document.getElementById('unread-messages-count');
         const revenueElement = document.getElementById('revenue');
         
-        if (newOrdersElement) newOrdersElement.textContent = newOrdersCount;
-        if (unreadMessagesElement) unreadMessagesElement.textContent = unreadMessagesCount;
-        if (revenueElement) revenueElement.textContent = revenue.toFixed(2);
+        if (newOrdersElement) newOrdersElement.textContent = pendingOrders;
+        if (unreadMessagesElement) unreadMessagesElement.textContent = unreadMessages;
+        if (revenueElement) revenueElement.textContent = `${parseFloat(revenue).toFixed(2)} DH`;
 
         // Afficher les commandes récentes
-        if (stats.recentOrders && Array.isArray(stats.recentOrders)) {
-            console.log('Commandes récentes trouvées:', stats.recentOrders.length);
-            displayRecentOrders(stats.recentOrders);
+        if (recentOrders.length > 0) {
+            console.log('Commandes récentes trouvées:', recentOrders.length);
+            if (typeof displayRecentOrders === 'function') {
+                displayRecentOrders(recentOrders);
+            } else {
+                console.warn('La fonction displayRecentOrders n\'est pas disponible');
+            }
         } else {
-            console.warn('Aucune donnée de commandes récentes trouvée dans stats.recentOrders');
+            console.warn('Aucune commande récente trouvée');
             const recentOrdersContainer = document.getElementById('recent-orders');
             if (recentOrdersContainer) {
                 recentOrdersContainer.innerHTML = 
