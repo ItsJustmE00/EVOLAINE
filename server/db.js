@@ -13,16 +13,16 @@ console.log('Utilisateur de la base de données:', process.env.DB_USER);
 
 // Configuration de la connexion à la base de données
 const dbConfig = {
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASSWORD,
-  port: parseInt(process.env.DB_PORT || '5432', 10),
-  // Configuration SSL pour la production
-  ssl: process.env.NODE_ENV === 'production' ? { 
+  user: 'evolaine_user',
+  host: 'dpg-d2iicoemcj7s73ce7t40-a.frankfurt-postgres.render.com',
+  database: 'evolaine_pyal',
+  password: 'Ev3IK5xjDLB0IasN0XoaKZUhu8ZhR4hG',
+  port: 5432,
+  // Configuration SSL requise pour Render
+  ssl: {
     rejectUnauthorized: false,
     sslmode: 'require'
-  } : false,
+  },
   // Paramètres du pool de connexions
   max: 20, // Nombre maximum de clients dans le pool
   connectionTimeoutMillis: 10000, // 10 secondes de délai de connexion
@@ -144,17 +144,42 @@ async function testConnection() {
   }
 }
 
-// Vérifier le schéma (ajouter la colonne full_name si elle n'existe pas encore)
+// Vérifier le schéma de la table messages
 async function ensureSchema() {
   try {
     console.log('\n🔧 Vérification du schéma de la base de données (table messages)...');
-    await pool.query(`ALTER TABLE IF EXISTS messages ADD COLUMN IF NOT EXISTS full_name VARCHAR(255);`);
-    await pool.query(`ALTER TABLE IF EXISTS messages ADD COLUMN IF NOT EXISTS name VARCHAR(255);`);
-    await pool.query(`UPDATE messages SET name = full_name WHERE name IS NULL;`);
-    await pool.query(`ALTER TABLE IF EXISTS messages ALTER COLUMN email DROP NOT NULL;`);
-    console.log('✅ Schéma vérifié / colonne full_name OK');
+    
+    // Supprimer la colonne email si elle existe
+    try {
+      await pool.query(`ALTER TABLE IF EXISTS messages DROP COLUMN IF EXISTS email;`);
+    } catch (err) {
+      console.log('ℹ️ La colonne email n\'existe pas ou a déjà été supprimée');
+    }
+    
+    // S'assurer que les colonnes nécessaires existent
+    await pool.query(`
+      DO $$
+      BEGIN
+        -- Ajouter full_name s'il n'existe pas
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                      WHERE table_name='messages' AND column_name='full_name') THEN
+          ALTER TABLE messages ADD COLUMN full_name VARCHAR(255);
+        END IF;
+        
+        -- Supprimer la contrainte NOT NULL sur full_name si elle existe
+        BEGIN
+          ALTER TABLE messages ALTER COLUMN full_name DROP NOT NULL;
+        EXCEPTION WHEN OTHERS THEN
+          -- La colonne n'existe pas ou n'a pas de contrainte NOT NULL
+          NULL;
+        END;
+      END
+      $$;
+    `);
+    
+    console.log('✅ Schéma de la table messages vérifié avec succès');
   } catch (err) {
-    console.error('❌ Erreur lors de la vérification/ajout de la colonne full_name:', err.message);
+    console.error('❌ Erreur lors de la vérification du schéma:', err.message);
   }
 }
 

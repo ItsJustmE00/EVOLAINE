@@ -12,7 +12,7 @@ const { pool } = require('./db');
 // Configuration des variables d'environnement avec des valeurs par défaut pour le développement
 const config = {
   NODE_ENV: process.env.NODE_ENV || 'development',
-  PORT: process.env.PORT || 3005,
+  PORT: process.env.PORT || 3004,
   DB_USER: process.env.DB_USER || 'postgres',
   DB_HOST: process.env.DB_HOST || 'localhost',
   DB_NAME: process.env.DB_NAME || 'evolaine',
@@ -50,7 +50,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'f5cc1fb8036dfadd1b811416c4e9dfda';
 // Création de l'application Express
 console.log('Création de l\'application Express...');
 const app = express();
-const PORT = process.env.PORT || 3005;
+const PORT = process.env.PORT || 3004;
 
 // Création du serveur HTTP
 const server = http.createServer(app);
@@ -216,44 +216,21 @@ function verifyAdminToken(token) {
   }
 }
 
-// Configuration des fichiers statiques
-app.use(express.static('public'));
-// Servir également les images stockées dans le dossier front (project/public)
-app.use(express.static(path.join(__dirname, '../project/public')));
-app.use('/admin', express.static(path.join(__dirname, 'admin'), {
-  setHeaders: (res) => {
-    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    res.set('Pragma', 'no-cache');
-    res.set('Expires', '0');
-    res.set('Surrogate-Control', 'no-store');
-  }
-}));
-
-// Route pour la page de connexion admin
-app.get('/admin/login', (req, res) => {
-  res.sendFile(path.join(__dirname, 'admin', 'login.html'));
-});
-
-// Route pour le tableau de bord admin
-app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'admin', 'index.html'));
-});
-
 // Configuration CORS
 console.log('🔧 Configuration CORS...');
 const allowedOrigins = [
   'http://localhost:3000',
-  'http://localhost:3003',
   'http://localhost:3004',
   'http://localhost:3005',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3004',
+  'http://127.0.0.1:3005',
   'http://localhost:5173',
-  'http://localhost:5174',
+  'http://127.0.0.1:5173',
   'https://evolaine.vercel.app',
-  'https://evolaine-admin.vercel.app',
+  'https://www.evolaine.com',
+  'https://evolaine.com',
   'https://evolaine-backend.onrender.com',
-  'http://192.168.3.11:3003',
-  'http://192.168.3.11:3004',
-  'http://192.168.3.11:3005',
   'https://evolaine-frontend.onrender.com',
   'https://project-lilac-beta.vercel.app',
   'http://192.168.3.11:3005'
@@ -305,8 +282,8 @@ const corsOptions = {
     console.log('Vérification CORS pour l\'origine:', origin);
     
     // En développement, autoriser toutes les origines avec des avertissements
-    if (process.env.NODE_ENV !== 'production' || origin === 'http://localhost:3005') {
-      console.log('Mode développement ou accès local: origine autorisée:', origin);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Mode développement: toutes les origines sont autorisées');
       return callback(null, true);
     }
     
@@ -399,16 +376,19 @@ app.post('/api/admin/login', (req, res) => {
   const ip = req.ip || req.connection.remoteAddress;
   let entry = loginAttempts[ip] || { count: 0, lockUntil: 0 };
 
-  // Limitation temporaire désactivée – aucune mise en quarantaine des IP pour l'instant
+  // Si l'IP est actuellement bloquée
+  if (entry.lockUntil && Date.now() < entry.lockUntil) {
+    const retryAfter = Math.ceil((entry.lockUntil - Date.now()) / 1000);
+    return res.status(429).json({ success: false, error: `Trop de tentatives. Réessayez dans ${retryAfter}s` });
+  }
 
     // Support multiple admin comptes via env ADMIN_ACCOUNTS="user:pass,user2:pass2"
-  // Utiliser uniquement les identifiants statiques souhaités
-  const adminPairs = [{ u: 'EVOLAINE', p: 'TAHR1TAHR1' }];
-
-  // DEBUG ───────────────────────────────────────────
-  console.log('🛂 Liste des comptes admin autorisés:', adminPairs);
-  console.log('🛂 Identifiants reçus:', { username, password });
-  // ─────────────────────────────────────────────────
+  const ADMIN_ACCOUNTS_RAW = process.env.ADMIN_ACCOUNTS || '';
+  const adminPairs = ADMIN_ACCOUNTS_RAW.split(',').filter(Boolean).map(pair => {
+    const [u, p] = pair.split(':');
+    return { u, p };
+  });
+  adminPairs.push({ u: process.env.ADMIN_USERNAME || 'EVOLAINE', p: process.env.ADMIN_PASSWORD || 'TAHR1TAHR1' });
 
   const isValid = adminPairs.some(acc => acc.u === username && acc.p === password);
 
@@ -421,58 +401,29 @@ app.post('/api/admin/login', (req, res) => {
     return res.json({ success: true, token });
   }
 
-  // Identifiants invalides
-  return res.status(401).json({ success: false, error: 'Identifiants invalides' });
+  // Mauvais identifiants → incrémenter le compteur
+  entry.count += 1;
+  let lockDuration = 0;
+  if (entry.count === 1) {
+    lockDuration = 60 * 1000; // 1 min après la 1ʳᵉ erreur
+  } else if (entry.count % 3 === 0) {
+    lockDuration = 60 * 60 * 1000; // 1 h après chaque 3ᵉ erreur
+  }
+  if (lockDuration) {
+    entry.lockUntil = Date.now() + lockDuration;
+  }
   loginAttempts[ip] = entry;
 
   return res.status(401).json({ success: false, error: 'Identifiants invalides' });
 });
 
-// Vérification du token JWT
-app.get('/api/admin/verify-token', (req, res) => {
-  const authHeader = req.headers.authorization;
   
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ valid: false, error: 'Token non fourni' });
-  }
-
-  const token = authHeader.split(' ')[1];
-  
-  try {
-    // Vérifier le token
-    const decoded = jwt.verify(token, JWT_SECRET);
-    
-    // Vérifier que l'utilisateur a le rôle admin
-    if (decoded.role !== 'admin') {
-      return res.status(403).json({ valid: false, error: 'Accès non autorisé' });
-    }
-    
-    // Le token est valide
-    return res.json({ 
-      valid: true, 
-      user: {
-        username: decoded.username,
-        role: decoded.role
-      }
-    });
-  } catch (error) {
-    console.error('Erreur de vérification du token:', error);
-    return res.status(401).json({ 
-      valid: false, 
-      error: 'Token invalide ou expiré' 
-    });
-  }
-});
-
 
 // Middleware pour protéger les routes admin
 function adminAuth(req, res, next) {
   // Autoriser l'accès à la page de connexion et aux fichiers statiques
-  if (req.path === '/admin/login' || 
-      req.path === '/login' || 
+  if (req.path.startsWith('/login') || 
       req.path === '/verify-token' ||
-      req.path === '/api/admin/login' ||
-      req.path === '/api/admin/verify-token' ||
       req.path.endsWith('.html') ||
       req.path.endsWith('.js') ||
       req.path.endsWith('.css') ||
@@ -484,10 +435,7 @@ function adminAuth(req, res, next) {
       req.path.endsWith('.woff') ||
       req.path.endsWith('.woff2') ||
       req.path.endsWith('.ttf') ||
-      req.path.endsWith('.eot') ||
-      req.path === '/admin' ||
-      req.path === '/admin/') {
-    console.log('Accès autorisé à la ressource:', req.path);
+      req.path.endsWith('.eot')) {
     return next();
   }
 
@@ -522,7 +470,7 @@ function adminAuth(req, res, next) {
 
 // Appliquer le middleware d'authentification à toutes les routes /admin
 app.use('/admin', adminAuth);
-// app.use('/api/admin', adminAuth); // désactivé temporairement pour debug
+app.use('/api/admin', adminAuth);
 
 // Middleware pour logger les requêtes
 app.use((req, res, next) => {
@@ -554,6 +502,18 @@ app.use((req, res, next) => {
   }
   
   next();
+});
+
+  try {
+    console.log('Récupération de tous les messages...');
+    const result = await pool.query(
+      'SELECT * FROM messages ORDER BY created_at DESC'
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erreur lors de la récupération des messages:', err);
+    res.status(500).json({ error: 'Erreur serveur lors de la récupération des messages' });
+  }
 });
 
 // Initialisation de la connexion à la base de données PostgreSQL
@@ -732,33 +692,6 @@ app.get('/api/admin/verify-token', (req, res) => {
 
 // Configuration du dossier des fichiers statiques
 app.use(express.static(path.join(__dirname, 'public')));
-
-// Configuration du dossier d'administration
-const adminPath = path.join(__dirname, 'admin');
-
-// Servir les fichiers statiques du dossier admin avant le middleware d'authentification
-app.use('/admin', express.static(adminPath, {
-  setHeaders: (res) => {
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-  }
-}));
-
-// Route explicite pour la page de connexion
-app.get('/admin/login.html', (req, res) => {
-  res.sendFile(path.join(adminPath, 'login.html'));
-});
-
-// Route pour la racine de l'admin
-app.get('/admin', (req, res) => {
-  res.sendFile(path.join(adminPath, 'index.html'));
-});
-
-// Route pour toutes les autres routes de l'admin (pour le SPA)
-app.get('/admin/*', (req, res) => {
-  res.sendFile(path.join(adminPath, 'index.html'));
-});
 
 // Endpoint de santé
 app.get('/api/health', (req, res) => {

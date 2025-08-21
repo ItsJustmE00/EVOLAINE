@@ -8,9 +8,31 @@ if (typeof window.currentMessageId === 'undefined') {
 }
 let currentMessageId = window.currentMessageId;
 
-// Configuration de l'URL de l'API
-const API_BASE_URL = 'https://evolaine-backend.onrender.com';
-const API_URL = API_BASE_URL;
+// Configuration de l'URL de l'API (évite redéfinitions clash)
+if (typeof window.API_BASE_URL === 'undefined') {
+  window.API_BASE_URL = window.location.origin;
+}
+if (typeof window.API_URL === 'undefined') {
+  window.API_URL = window.API_BASE_URL;
+}
+const API_BASE_URL = window.API_BASE_URL;
+const API_URL = window.API_URL;
+
+// Vérifier l'authentification avant toute action
+const checkAuth = () => {
+  const token = localStorage.getItem('adminToken');
+  if (!token && !window.location.pathname.endsWith('login.html')) {
+    window.location.href = '/admin/login.html';
+    return false;
+  }
+  return true;
+};
+
+// Gérer la déconnexion
+const logout = () => {
+  localStorage.removeItem('adminToken');
+  window.location.href = '/admin/login.html';
+};
 
 // === Auth ===
 
@@ -21,7 +43,7 @@ async function ensureAdminAuth() {
 }
 
 // Exécuter l'auth avant le reste
-await ensureAdminAuth(); // La base de l'URL, car les routes commencent déjà par /api
+ensureAdminAuth(); // Auth appelée sans await pour compatibilité scripts non modules
 
 // Configuration de la connexion WebSocket
 console.log('🚀 Initialisation de la connexion WebSocket...');
@@ -1076,6 +1098,9 @@ async function viewOrder(orderId) {
                                 Total : ${parseFloat(order.total).toFixed(2)} DH
                             </div>
                             <div class="space-x-2">
+                                    <button onclick="window.print()" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+                                        Imprimer
+                                    </button>
                                 <button onclick="updateOrderStatus(${order.id}, 'cancelled')" 
                                         class="px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200">
                                     Annuler

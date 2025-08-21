@@ -95,13 +95,25 @@
     <!-- Barre mobile -->
     <div class="md:hidden flex items-center justify-between bg-indigo-700 text-white px-4 py-3">
         <h1 class="font-bold">EVOLAINE Admin</h1>
-        <button id="mobile-menu-button"><i class="fas fa-bars text-2xl"></i></button>
+        <div class="flex items-center space-x-4">
+            <button id="logout-button" class="text-white hover:text-red-200 transition-colors">
+                <i class="fas fa-sign-out-alt text-xl"></i>
+            </button>
+            <button id="mobile-menu-button">
+                <i class="fas fa-bars text-2xl"></i>
+            </button>
+        </div>
     </div>
     <div class="min-h-screen">
         <!-- Sidebar -->
-        <div id="sidebar" class="hidden md:block bg-indigo-700 text-white md:w-64 fixed h-full transform -translate-x-full md:translate-x-0 transition-transform duration-300">
+        <div id="sidebar" class="hidden md:block bg-indigo-700 text-white md:w-64 fixed h-full transform -translate-x-full md:translate-x-0 transition-transform duration-300 flex flex-col">
             <div class="p-4">
-                <h1 class="text-2xl font-bold">EVOLAINE Admin</h1>
+                <div class="flex justify-between items-center">
+                    <h1 class="text-2xl font-bold">EVOLAINE Admin</h1>
+                    <button id="desktop-logout" class="text-white hover:text-red-200 transition-colors p-2">
+                        <i class="fas fa-sign-out-alt text-xl"></i>
+                    </button>
+                </div>
             </div>
             <nav class="mt-8">
                 <a href="#" class="block py-3 px-6 bg-indigo-800" id="dashboard-tab">
@@ -308,6 +320,48 @@
     </div>
 
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        // Vérifier l'authentification au chargement
+        document.addEventListener('DOMContentLoaded', () => {
+            // Gestion de la déconnexion
+            const logout = () => {
+                localStorage.removeItem('adminToken');
+                window.location.href = '/admin/login.html';
+            };
+
+            // Écouteurs pour les boutons de déconnexion
+            document.getElementById('logout-button')?.addEventListener('click', logout);
+            document.getElementById('desktop-logout')?.addEventListener('click', logout);
+
+            // Vérifier si l'utilisateur est connecté
+            const token = localStorage.getItem('adminToken');
+            if (!token) {
+                window.location.href = '/admin/login.html';
+                return;
+            }
+
+            // Vérifier la validité du token
+            fetch('/api/admin/verify-token', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.valid) {
+                    localStorage.removeItem('adminToken');
+                    window.location.href = '/admin/login.html';
+                }
+            })
+            .catch(() => {
+                localStorage.removeItem('adminToken');
+                window.location.href = '/admin/login.html';
+            });
+        });
+    </script>
     <script type="module" src="admin.js"></script>
+    <!-- Configuration et scripts -->
+    <script src="/admin/js/config.js"></script>
+    <script src="/admin/admin.js"></script>
 </body>
 </html>
