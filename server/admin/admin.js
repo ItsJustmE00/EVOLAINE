@@ -9,8 +9,10 @@ if (typeof window.currentMessageId === 'undefined') {
 let currentMessageId = window.currentMessageId;
 
 // Configuration de l'URL de l'API (évite redéfinitions clash)
+const PROD_BACKEND_URL = 'https://evolaine-backend.onrender.com';
+const isProdFrontend = window.location.hostname === 'evolaine.vercel.app';
 if (typeof window.API_BASE_URL === 'undefined') {
-  window.API_BASE_URL = window.location.origin;
+  window.API_BASE_URL = isProdFrontend ? PROD_BACKEND_URL : window.location.origin;
 }
 if (typeof window.API_URL === 'undefined') {
   window.API_URL = window.API_BASE_URL;
