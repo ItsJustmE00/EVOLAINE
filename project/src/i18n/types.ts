@@ -36,6 +36,7 @@ export interface ProductsTranslations {
   cartEmpty: string;
   cartSubtotal: string;
   shipping: string;
+  shipping20?: string;
   tax: string;
   orderTotal: string;
   freeShipping: string;
@@ -256,6 +257,9 @@ export interface Translations {
   navigation: NavigationTranslations;
   productDetail: ProductDetailTranslations;
   products: ProductsTranslations;
+  product: {
+    addedToCart: string;
+  };
   testimonials: TestimonialsTranslations;
   about: AboutTranslations; // À typer plus précisément si nécessaire
   contact: any; // À typer plus précisément si nécessaire

@@ -28,6 +28,9 @@ export const fr: Translations = {
     close_menu: "Fermer le menu",
     currency: "DH"
   },
+  product: {
+    addedToCart: "Produit ajouté au panier !"
+  },
   navigation: {
     home: "Accueil",
     products: "Produits",
@@ -176,6 +179,7 @@ export const fr: Translations = {
     cartEmpty: "Votre panier est vide",
     cartSubtotal: "Sous-total",
     shipping: "Livraison gratuite",
+    shipping20: "Livraison 20 DH",
     tax: "TVA",
     orderTotal: "Total de la commande",
     freeShipping: "Livraison gratuite",
@@ -377,6 +381,9 @@ export const ar: Translations = {
     close_menu: "أغلق القائمة",
     currency: "د.م."
   },
+  product: {
+    addedToCart: "تمت الإضافة إلى السلة!"
+  },
   navigation: {
     home: "الرئيسية",
     products: "المنتجات",
@@ -464,6 +471,7 @@ export const ar: Translations = {
     cartEmpty: "سلة التسوق فارغة",
     cartSubtotal: "المجموع الفرعي",
     shipping: "شحن مجاني",
+    shipping20: "توصيل 20 درهم",
     tax: "الضريبة",
     orderTotal: "إجمالي الطلب",
     freeShipping: "شحن مجاني",
@@ -471,6 +479,19 @@ export const ar: Translations = {
     secureCheckout: "الدفع الآمن",
     moneyBack: "ضمان استعادة الأموال",
     customerSupport: "دعم العملاء",
+
+
+
+
+
+
+
+
+
+
+
+
+
     items: {
       1: {
         name: "باك كامل إيفولين",
