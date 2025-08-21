@@ -144,17 +144,55 @@ async function testConnection() {
   }
 }
 
-// Vérifier le schéma (ajouter la colonne full_name si elle n'existe pas encore)
+// Vérifier le schéma (ajouter les colonnes manquantes si nécessaire)
 async function ensureSchema() {
+  const client = await pool.connect();
   try {
-    console.log('\n🔧 Vérification du schéma de la base de données (table messages)...');
-    await pool.query(`ALTER TABLE IF EXISTS messages ADD COLUMN IF NOT EXISTS full_name VARCHAR(255);`);
-    await pool.query(`ALTER TABLE IF EXISTS messages ADD COLUMN IF NOT EXISTS name VARCHAR(255);`);
-    await pool.query(`UPDATE messages SET name = full_name WHERE name IS NULL;`);
-    await pool.query(`ALTER TABLE IF EXISTS messages ALTER COLUMN email DROP NOT NULL;`);
-    console.log('✅ Schéma vérifié / colonne full_name OK');
+    console.log('\n🔧 Vérification du schéma de la base de données...');
+    
+    // Vérifier et ajouter les colonnes manquantes
+    await client.query(`
+      DO $$
+      BEGIN
+        -- Ajouter full_name s'il n'existe pas
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                      WHERE table_name='messages' AND column_name='full_name') THEN
+          ALTER TABLE messages ADD COLUMN full_name VARCHAR(255);
+          RAISE NOTICE 'Colonne full_name ajoutée avec succès';
+        END IF;
+        
+        -- Ajouter name s'il n'existe pas
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                      WHERE table_name='messages' AND column_name='name') THEN
+          ALTER TABLE messages ADD COLUMN name VARCHAR(255);
+          RAISE NOTICE 'Colonne name ajoutée avec succès';
+        END IF;
+        
+        -- Mettre à jour name à partir de full_name si nécessaire
+        UPDATE messages SET name = full_name WHERE name IS NULL AND full_name IS NOT NULL;
+        
+        -- Vérifier si la colonne email existe avant de tenter de la modifier
+        IF EXISTS (SELECT 1 FROM information_schema.columns 
+                  WHERE table_name='messages' AND column_name='email') THEN
+          -- Essayer de rendre la colonne nullable si elle ne l'est pas déjà
+          BEGIN
+            ALTER TABLE messages ALTER COLUMN email DROP NOT NULL;
+            RAISE NOTICE 'Contrainte NOT NULL supprimée de la colonne email';
+          EXCEPTION WHEN others THEN
+            RAISE NOTICE 'Impossible de modifier la colonne email: %', SQLERRM;
+          END;
+        END IF;
+        
+        RAISE NOTICE 'Vérification du schéma terminée avec succès';
+      END $$;
+    `);
+    
+    console.log('✅ Schéma de la base de données vérifié avec succès');
   } catch (err) {
-    console.error('❌ Erreur lors de la vérification/ajout de la colonne full_name:', err.message);
+    console.error('❌ Erreur lors de la vérification du schéma:', err.message);
+    // Ne pas échouer complètement, continuer quand même
+  } finally {
+    client.release();
   }
 }
 
