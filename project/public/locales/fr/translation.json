@@ -57,7 +57,11 @@
   "products": {
     "title": "Nos Produits",
     "subtitle": "Découvrez notre collection exclusive de soins",
-    "shipping": "Livraison gratuite"
+    "shipping": "Livraison gratuite",
+    "shipping20": "Livraison 20 DH"
+  },
+  "product": {
+    "addedToCart": "Produit ajouté au panier !"
   },
   "cart": {
     "title": "Votre Panier",

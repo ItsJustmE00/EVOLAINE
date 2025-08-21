@@ -82,6 +82,22 @@ html, body {
 }
 
 /* Style pour le corps quand une modale est ouverte */
+
+/* --------------------------------------------------
+   Amélioration : Positionnement précis lors de la
+   navigation vers une section (#ancre) sur petits
+   écrans. On ajoute une marge de défilement afin que
+   le titre de section ne soit pas masqué par l'en-tête
+   fixe plus haut sur mobile.                      
+   --------------------------------------------------*/
+@media (max-width: 768px) {
+  /* Toutes les sections ciblables par un id bénéficient de la marge */
+  section[id] {
+    scroll-margin-top: 6.5rem; /* ≈104px, correspond à la hauteur totale du header + bannière */
+  }
+}
+
+
 body.modal-open {
   overflow: hidden;
   padding-right: 15px; /* Pour éviter le saut de contenu lors de l'ouverture de la modale */
