@@ -767,7 +767,7 @@ app.get('/api/health', (req, res) => {
 
 // Route racine simple pour Render
 app.get('/', (req, res) => {
-  res.json({ success: true, message: 'Evolaine backend is running 🎉' });
+  return res.redirect('/admin');
 });
 
 // Endpoint temporaire pour vérifier les villes
