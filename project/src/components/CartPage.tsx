@@ -20,15 +20,84 @@ const CartPage = () => {
     address: '',
     city: ''
   });
+  
+  const [errors, setErrors] = useState({
+    first_name: '',
+    last_name: '',
+    phone: '',
+    address: '',
+    city: ''
+  });
+  
+  const [touched, setTouched] = useState({
+    first_name: false,
+    last_name: false,
+    phone: false,
+    address: false,
+    city: false
+  });
   const [orderConfirmed, setOrderConfirmed] = useState(false);
   const [orderNumber] = useState(`CMD-${Math.floor(100000 + Math.random() * 900000)}`);
 
+  const validateField = (name: string, value: string) => {
+    switch (name) {
+      case 'first_name':
+      case 'last_name':
+        return value.trim() === '' ? t('checkout.errors.required', 'Ce champ est requis') : '';
+      case 'phone': {
+        const phoneRegex = /^(06|07)\d{8}$/;
+        const sanitizedPhone = value.replace(/\s+/g, '');
+        return !phoneRegex.test(sanitizedPhone) 
+          ? t('checkout.errors.invalidPhone', 'Numéro de téléphone invalide (format: 06XXXXXXXX ou 07XXXXXXXX)')
+          : '';
+      }
+      case 'address':
+        return value.trim().length < 10 
+          ? t('checkout.errors.addressTooShort', 'L\'adresse est trop courte')
+          : '';
+      case 'city':
+        return value.trim() === '' 
+          ? t('checkout.errors.required', 'Ce champ est requis') 
+          : '';
+      default:
+        return '';
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+
+    // Valider le champ s'il a déjà été touché
+    if (touched[name as keyof typeof touched]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: validateField(name, value)
+      }));
+    }
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    
+    setTouched(prev => ({
+      ...prev,
+      [name]: true
+    }));
+
+    setErrors(prev => ({
+      ...prev,
+      [name]: validateField(name, value)
+    }));
+  };
+
+  const isFormValid = () => {
+    return Object.values(errors).every(error => !error) && 
+           Object.values(formData).every(field => field.trim() !== '');
   };
 
   const handleSubmitOrder = async (e: React.FormEvent) => {
@@ -205,112 +274,145 @@ const CartPage = () => {
                   {t('checkout.deliveryInfo', 'Informations de livraison')}
                 </h3>
                 
-                <form onSubmit={handleSubmitOrder} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
+                <form onSubmit={handleSubmitOrder} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Prénom */}
+                    <div className="space-y-1">
                       <label htmlFor="first_name" className="block text-sm font-medium text-gray-700">
-                        {t('checkout.firstName', 'Prénom')}
+                        {t('checkout.firstName', 'Prénom')} <span className="text-red-500">*</span>
                       </label>
-                      <div className="mt-1 relative rounded-md shadow-sm">
+                      <div className="relative mt-1 rounded-md shadow-sm">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <User className="h-5 w-5 text-gray-400" />
+                          <User className={`h-5 w-5 ${errors.first_name && touched.first_name ? 'text-red-400' : 'text-gray-400'}`} />
                         </div>
                         <input
                           type="text"
                           id="first_name"
                           name="first_name"
-                          required
                           value={formData.first_name}
                           onChange={handleInputChange}
-                          className="focus:ring-pink-500 focus:border-pink-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
+                          onBlur={handleBlur}
+                          className={`block w-full pl-10 pr-3 py-2 sm:text-sm rounded-md ${errors.first_name && touched.first_name ? 'border-red-300 text-red-900 placeholder-red-300 focus:outline-none focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-pink-500 focus:border-pink-500'}`}
                           placeholder={t('checkout.firstName', 'Votre prénom')}
+                          aria-invalid={!!(errors.first_name && touched.first_name)}
+                          aria-describedby={errors.first_name && touched.first_name ? 'first_name-error' : undefined}
                         />
                       </div>
+                      {errors.first_name && touched.first_name && (
+                        <p className="mt-1 text-sm text-red-600" id="first_name-error">{errors.first_name}</p>
+                      )}
                     </div>
                     
-                    <div>
+                    {/* Nom */}
+                    <div className="space-y-1">
                       <label htmlFor="last_name" className="block text-sm font-medium text-gray-700">
-                        {t('checkout.lastName', 'Nom')}
+                        {t('checkout.lastName', 'Nom')} <span className="text-red-500">*</span>
                       </label>
-                      <div className="mt-1 relative rounded-md shadow-sm">
+                      <div className="relative mt-1 rounded-md shadow-sm">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <User className="h-5 w-5 text-gray-400" />
+                          <User className={`h-5 w-5 ${errors.last_name && touched.last_name ? 'text-red-400' : 'text-gray-400'}`} />
                         </div>
                         <input
                           type="text"
                           id="last_name"
                           name="last_name"
-                          required
                           value={formData.last_name}
                           onChange={handleInputChange}
-                          className="focus:ring-pink-500 focus:border-pink-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
+                          onBlur={handleBlur}
+                          className={`block w-full pl-10 pr-3 py-2 sm:text-sm rounded-md ${errors.last_name && touched.last_name ? 'border-red-300 text-red-900 placeholder-red-300 focus:outline-none focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-pink-500 focus:border-pink-500'}`}
                           placeholder={t('checkout.lastName', 'Votre nom')}
+                          aria-invalid={!!(errors.last_name && touched.last_name)}
+                          aria-describedby={errors.last_name && touched.last_name ? 'last_name-error' : undefined}
                         />
                       </div>
+                      {errors.last_name && touched.last_name && (
+                        <p className="mt-1 text-sm text-red-600" id="last_name-error">{errors.last_name}</p>
+                      )}
                     </div>
                   </div>
                   
-                  <div>
-                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                      {t('checkout.phone', 'Téléphone')}
-                    </label>
-                    <div className="mt-1 relative rounded-md shadow-sm">
+                  {/* Téléphone */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                        {t('checkout.phone', 'Téléphone')} <span className="text-red-500">*</span>
+                      </label>
+                      <span className="text-xs text-gray-500">Format: 06XXXXXXXX ou 07XXXXXXXX</span>
+                    </div>
+                    <div className="relative mt-1 rounded-md shadow-sm">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Phone className="h-5 w-5 text-gray-400" />
+                        <Phone className={`h-5 w-5 ${errors.phone && touched.phone ? 'text-red-400' : 'text-gray-400'}`} />
                       </div>
                       <input
                         type="tel"
                         name="phone"
                         id="phone"
-                        required
                         value={formData.phone}
                         onChange={handleInputChange}
-                        className="focus:ring-pink-500 focus:border-pink-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
+                        onBlur={handleBlur}
+                        className={`block w-full pl-10 pr-3 py-2 sm:text-sm rounded-md ${errors.phone && touched.phone ? 'border-red-300 text-red-900 placeholder-red-300 focus:outline-none focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-pink-500 focus:border-pink-500'}`}
                         placeholder={t('checkout.phone', 'Votre numéro de téléphone')}
+                        aria-invalid={!!(errors.phone && touched.phone)}
+                        aria-describedby={errors.phone && touched.phone ? 'phone-error' : undefined}
                       />
                     </div>
+                    {errors.phone && touched.phone && (
+                      <p className="mt-1 text-sm text-red-600" id="phone-error">{errors.phone}</p>
+                    )}
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Adresse */}
+                    <div className="space-y-1">
                       <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-                        {t('checkout.address', 'Adresse de livraison')}
+                        {t('checkout.address', 'Adresse de livraison')} <span className="text-red-500">*</span>
                       </label>
-                      <div className="mt-1 relative rounded-md shadow-sm">
+                      <div className="relative mt-1 rounded-md shadow-sm">
                         <div className="absolute top-3 left-3">
-                          <MapPin className="h-5 w-5 text-gray-400" />
+                          <MapPin className={`h-5 w-5 ${errors.address && touched.address ? 'text-red-400' : 'text-gray-400'}`} />
                         </div>
                         <textarea
                           name="address"
                           id="address"
                           rows={3}
-                          required
                           value={formData.address}
                           onChange={handleInputChange}
-                          className="focus:ring-pink-500 focus:border-pink-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
+                          onBlur={handleBlur}
+                          className={`block w-full pl-10 pr-3 py-2 sm:text-sm rounded-md ${errors.address && touched.address ? 'border-red-300 text-red-900 placeholder-red-300 focus:outline-none focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-pink-500 focus:border-pink-500'}`}
                           placeholder={t('checkout.address', 'Votre adresse complète')}
+                          aria-invalid={!!(errors.address && touched.address)}
+                          aria-describedby={errors.address && touched.address ? 'address-error' : undefined}
                         />
                       </div>
+                      {errors.address && touched.address && (
+                        <p className="mt-1 text-sm text-red-600" id="address-error">{errors.address}</p>
+                      )}
                     </div>
-                    <div>
+                    {/* Ville */}
+                    <div className="space-y-1">
                       <label htmlFor="city" className="block text-sm font-medium text-gray-700">
-                        {t('checkout.city', 'Ville')}
+                        {t('checkout.city', 'Ville')} <span className="text-red-500">*</span>
                       </label>
-                      <div className="mt-1 relative rounded-md shadow-sm">
+                      <div className="relative mt-1 rounded-md shadow-sm">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <MapPin className="h-5 w-5 text-gray-400" />
+                          <MapPin className={`h-5 w-5 ${errors.city && touched.city ? 'text-red-400' : 'text-gray-400'}`} />
                         </div>
                         <input
                           type="text"
                           name="city"
                           id="city"
-                          required
                           value={formData.city}
                           onChange={handleInputChange}
-                          className="focus:ring-pink-500 focus:border-pink-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
+                          onBlur={handleBlur}
+                          className={`block w-full pl-10 pr-3 py-2 sm:text-sm rounded-md ${errors.city && touched.city ? 'border-red-300 text-red-900 placeholder-red-300 focus:outline-none focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-pink-500 focus:border-pink-500'}`}
                           placeholder={t('checkout.city', 'Votre ville')}
+                          aria-invalid={!!(errors.city && touched.city)}
+                          aria-describedby={errors.city && touched.city ? 'city-error' : undefined}
                         />
                       </div>
+                      {errors.city && touched.city && (
+                        <p className="mt-1 text-sm text-red-600" id="city-error">{errors.city}</p>
+                      )}
                     </div>
                   </div>
                   
@@ -321,10 +423,21 @@ const CartPage = () => {
                     </div>
                     <button
                       type="submit"
-                      className="w-full flex justify-center items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-pink-600 hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
+                      disabled={!isFormValid()}
+                      className={`w-full flex justify-center items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white ${
+                        isFormValid()
+                          ? 'bg-pink-600 hover:bg-pink-700 focus:ring-2 focus:ring-offset-2 focus:ring-pink-500'
+                          : 'bg-pink-400 cursor-not-allowed'
+                      } focus:outline-none`}
+                      aria-disabled={!isFormValid()}
                     >
                       {t('checkout.submit', 'Confirmer la commande')}
                     </button>
+                    {!isFormValid() && (
+                      <p className="mt-2 text-sm text-gray-500 text-center">
+                        Veuillez remplir tous les champs obligatoires correctement
+                      </p>
+                    )}
                   </div>
                 </form>
               </div>

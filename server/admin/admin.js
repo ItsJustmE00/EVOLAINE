@@ -453,147 +453,407 @@ function formatDateForInput(date) {
 
 // Fonction pour formater la date en français
 function formatFrenchDate(dateString) {
-  const options = { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
-  };
+  const options = { year: 'numeric', month: 'long', day: 'numeric' };
   return new Date(dateString).toLocaleDateString('fr-FR', options);
 }
 
-// Fonction pour imprimer les commandes par date
-async function printOrdersByDate() {
+// Fonction pour exporter les commandes au format CSV optimisé pour Excel
+function exportToCSV(orders, fileName) {
   try {
-    console.log('Début de la fonction printOrdersByDate');
-    const dateInput = document.getElementById('order-date');
-    const selectedDate = dateInput.value || formatDateForInput(new Date());
+    const sep = ';'; // Séparateur point-virgule pour Excel FR
+    const lineBreak = '\r\n'; // Retour à la ligne Windows pour Excel
     
-    console.log(`📄 Récupération des commandes pour le ${selectedDate}...`);
+    // Fonction pour échapper les valeurs CSV
+    const escapeCsv = (value) => {
+      if (value === null || value === undefined) return '';
+      // Remplacer les guillemets par des doubles guillemets
+      const escaped = value.toString().replace(/"/g, '""');
+      // Encadrer de guillemets si nécessaire
+      return /[,\n\r"]/.test(escaped) ? `"${escaped}"` : escaped;
+    };
+
+    // En-têtes des colonnes avec encodage UTF-8 explicite
+    const headers = [
+      'N° Commande', 'Client', 'Téléphone', 'Adresse', 'Ville',
+      'Date', 'Statut', 'Total (DH)', 'Produits', 'Notes'
+    ].map(header => `"${header}"`).join(sep) + lineBreak;
     
-    // Mettre à jour l'input avec la date sélectionnée
-    dateInput.value = selectedDate;
+    // Ajouter BOM UTF-8 et ligne de style Excel
+    const BOM = '\uFEFF';
+    const excelStyle = 'sep=;\r\n';
     
-    console.log(`Envoi de la requête à: ${API_URL}/api/orders/date/${selectedDate}`);
+    // Générer les lignes de données
+    let csvContent = BOM + excelStyle + headers;
     
-    const response = await fetch(`${API_URL}/api/orders/date/${selectedDate}`, {
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
+    orders.forEach(order => {
+      // Formater la date au format français pour Excel (JJ/MM/AAAA HH:MM)
+      const dateObj = new Date(order.created_at || new Date());
+      const date = [
+        String(dateObj.getDate()).padStart(2, '0'),
+        String(dateObj.getMonth() + 1).padStart(2, '0'),
+        dateObj.getFullYear()
+      ].join('/') + ' ' + [
+        String(dateObj.getHours()).padStart(2, '0'),
+        String(dateObj.getMinutes()).padStart(2, '0')
+      ].join(':');
+      
+      const client = `${order.first_name || ''} ${order.last_name || ''}`.trim();
+      
+      // Préparer la liste des produits
+      let products = '';
+      if (Array.isArray(order.items)) {
+        products = order.items.map(item => {
+          const name = item.name || 'Produit';
+          return `${item.quantity || 1}x ${name}` + 
+                 (item.size ? ` (Taille: ${item.size})` : '') +
+                 (item.color ? ` (Couleur: ${item.color})` : '');
+        }).join(' | ');
       }
+      
+      // Créer la ligne de données
+      const row = [
+        order.id || 'N/A',
+        client,
+        order.phone || '',
+        order.address || '',
+        order.city || '',
+        date,
+        order.status || 'En attente',
+        (parseFloat(order.total) || 0).toFixed(2).replace('.', ','),
+        products,
+        order.notes || ''
+      ].map(escapeCsv).join(sep) + lineBreak;
+      
+      csvContent += row;
     });
     
-    console.log('Réponse reçue, statut:', response.status);
+    // Ajouter l'en-tête BOM pour Excel et créer le blob
+    const blob = new Blob(["\uFEFF" + csvContent], { 
+      type: 'text/csv;charset=utf-8;' 
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${fileName}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
     
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Erreur de réponse:', errorText);
-      throw new Error(`Erreur HTTP ${response.status}: ${errorText}`);
-    }
-    
-    const data = await response.json();
-    console.log('Données reçues:', data);
-    
-    if (!data) {
-      throw new Error('Aucune donnée reçue du serveur');
-    }
-    
-    // Si data est déjà un tableau, l'utiliser directement
-    const orders = Array.isArray(data) ? data : (data.data || []);
-    
-    console.log(`Nombre de commandes à afficher: ${orders.length}`);
-
-    // Générer le contenu HTML imprimable
-    const htmlContent = `
-      <html>
-        <head>
-          <title>Commandes du jour</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 20px; }
-            table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; }
-            th { background-color: #f4f4f4; }
-            h1 { text-align: center; margin-bottom: 20px; }
-          </style>
-        </head>
-        <body>
-          <h1>Commandes du ${formatFrenchDate(selectedDate)}</h1>
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Nom</th>
-                <th>Prénom</th>
-                <th>Adresse</th>
-                <th>Ville</th>
-                <th>Produits</th>
-                <th>Total</th>
-                <th>Status</th>
-                <th>Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${orders.map(o => `
-                <tr>
-                  <td>${o.id}</td>
-                  <td>${o.last_name}</td>
-                  <td>${o.first_name}</td>
-                  <td>${o.address}</td>
-                  <td>${o.city}</td>
-                  <td>${(o.items || []).map(it => `${it.name} (${it.quantity} × ${it.price} DH)`).join('<br/>')}</td>
-                  <td>${o.total} DH</td>
-                  <td>${o.status}</td>
-                  <td>${new Date(o.created_at).toLocaleString()}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </body>
-      </html>`;
-
-    // Ouvrir une nouvelle fenêtre et imprimer
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert('Popup bloquée. Veuillez autoriser les popups pour imprimer.');
-      return;
-    }
-    printWindow.document.open();
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-    printWindow.close();
-  } catch (err) {
-    console.error('Erreur lors de l\'impression des commandes:', err);
-    showNotification(`Erreur lors de l'impression: ${err.message}`, 'error');
+  } catch (error) {
+    console.error('Erreur export CSV:', error);
+    alert('Erreur lors de l\'exportation CSV');
   }
 }
 
-// Initialiser la date du jour au chargement du DOM
-document.addEventListener('DOMContentLoaded', () => {
-  // Initialiser le sélecteur de date avec la date du jour
-  const dateInput = document.getElementById('order-date');
-  if (dateInput) {
-    dateInput.value = formatDateForInput(new Date());
-  }
-  
-  // Gestionnaire pour le bouton d'impression
-  const printBtn = document.getElementById('print-orders');
-  if (printBtn) {
-    printBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      printOrdersByDate();
+// Fonction d'exportation (toujours en CSV pour plus de fiabilité)
+function exportToExcel(orders, fileName) {
+  // Utiliser directement la fonction CSV qui est plus fiable
+  exportToCSV(orders, fileName);
+}
+
+// Fonction pour imprimer les commandes par date ou par période
+async function printOrdersByDate() {
+  try {
+    const useDateRange = document.getElementById('use-date-range').checked;
+    let url, title;
+    
+    if (useDateRange) {
+      const startDate = document.getElementById('start-date').value;
+      const endDate = document.getElementById('end-date').value || startDate;
+      if (!startDate) throw new Error('Veuillez sélectionner une date de début');
+      
+      url = `${API_URL}/api/orders/period?startDate=${startDate}&endDate=${endDate}`;
+      title = `Période du ${formatFrenchDate(startDate)}` + 
+              (endDate !== startDate ? ` au ${formatFrenchDate(endDate)}` : '');
+    } else {
+      const selectedDate = document.getElementById('start-date').value || formatDateForInput(new Date());
+      url = `${API_URL}/api/orders/date/${selectedDate}`;
+      title = `Commandes du ${formatFrenchDate(selectedDate)}`;
+    }
+    
+    const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (!response.ok) throw new Error(`Erreur HTTP ${response.status}: ${await response.text()}`);
+    
+    const data = await response.json();
+    if (!data) throw new Error('Aucune donnée reçue du serveur');
+    
+    const orders = Array.isArray(data) ? data : (data.orders || data.data || []);
+    if (orders.length === 0) {
+      showNotification('Aucune commande trouvée pour la période sélectionnée', 'info');
+      return;
+    }
+    
+    console.log(`Nombre de commandes à afficher: ${orders.length}`);
+
+    // Calculer le total des commandes
+    const totalAmount = orders.reduce((sum, order) => sum + parseFloat(order.total || 0), 0);
+    const formattedTotal = new Intl.NumberFormat('fr-FR', { 
+      style: 'currency', 
+      currency: 'MAD' 
+    }).format(totalAmount);
+
+    // Générer le contenu HTML pour l'impression
+    let printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Rapport des commandes - ${title}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          h1 { color: #333; text-align: center; }
+          .date { text-align: right; margin-bottom: 20px; }
+          table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background-color: #f2f2f2; }
+          .total { font-weight: bold; text-align: right; font-size: 1.2em; margin-top: 20px; }
+          @media print {
+            .no-print { display: none; }
+            @page { margin: 1cm; }
+          }
+        </style>
+      </head>
+      <body>
+        <h1>Rapport des commandes</h1>
+        <div class="date">${title} - Généré le ${formatFrenchDate(new Date().toISOString())}</div>
+        <table>
+          <thead>
+            <tr>
+              <th>N° Commande</th>
+              <th>Client</th>
+              <th>Téléphone</th>
+              <th>Adresse</th>
+              <th>Ville</th>
+              <th>Date</th>
+              <th>Statut</th>
+              <th>Montant</th>
+              <th>Produits</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+    
+    // Ajouter chaque commande au tableau
+    orders.forEach(order => {
+      const orderDate = order.created_at ? new Date(order.created_at) : new Date();
+      const products = Array.isArray(order.items) 
+        ? order.items.map(item => `${item.quantity}x ${item.name} (${item.price} DH)`).join('<br>')
+        : 'Aucun détail produit';
+      
+      printContent += `
+        <tr>
+          <td>${order.id || 'N/A'}</td>
+          <td>${order.first_name} ${order.last_name || ''}</td>
+          <td>${order.phone || 'Non fourni'}</td>
+          <td>${order.address || 'Non fournie'}</td>
+          <td>${order.city || 'Non fournie'}</td>
+          <td>${orderDate.toLocaleString('fr-FR')}</td>
+          <td>${order.status || 'En attente'}</td>
+          <td>${parseFloat(order.total || 0).toFixed(2)} DH</td>
+          <td>${products}</td>
+        </tr>`;
     });
+    
+    // Fermer le tableau et ajouter le total
+    printContent += `
+          </tbody>
+        </table>
+        <div class="total">Total des commandes: ${formattedTotal}</div>
+        <div class="no-print" style="margin-top: 30px; text-align: center;">
+          <button onclick="window.print()" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            <i class="fas fa-print"></i> Imprimer
+          </button>
+          <button id="export-excel" style="padding: 10px 20px; margin-left: 10px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            <i class="fas fa-file-excel"></i> Exporter vers Excel
+          </button>
+          <button onclick="window.close()" style="padding: 10px 20px; margin-left: 10px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            <i class="fas fa-times"></i> Fermer
+          </button>
+        </div>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+        <script>
+        // Fonction pour charger le script xlsx de manière asynchrone
+        function loadXLSXScript(callback) {
+          if (window.XLSX) {
+            callback();
+            return;
+          }
+          
+          const script = document.createElement('script');
+          script.src = 'https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js';
+          script.crossOrigin = 'anonymous';
+          script.onload = function() {
+            console.log('Bibliothèque XLSX chargée avec succès');
+            if (typeof callback === 'function') callback();
+          };
+          script.onerror = function(error) {
+            console.error('Erreur lors du chargement de la bibliothèque Excel:', error);
+            alert('Impossible de charger la bibliothèque Excel. Veuillez réessayer ou contacter le support.');
+            // Essayer avec un CDN de secours
+            loadXLSXFallback(callback);
+          };
+          document.head.appendChild(script);
+        }
+        
+        // Méthode de secours en cas d'échec du premier CDN
+        function loadXLSXFallback(callback) {
+          console.log('Tentative de chargement avec le CDN de secours...');
+          const fallbackScript = document.createElement('script');
+          fallbackScript.src = 'https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js';
+          fallbackScript.onload = function() {
+            console.log('Bibliothèque XLSX chargée avec succès (CDN de secours)');
+            if (typeof callback === 'function') callback();
+          };
+          fallbackScript.onerror = function(error) {
+            console.error('Échec du chargement avec le CDN de secours:', error);
+            alert('Échec du chargement de la bibliothèque Excel. Veuillez vérifier votre connexion Internet.');
+          };
+          document.head.appendChild(fallbackScript);
+        }
+        </script>
+      </body>
+    </html>
+    `;
+    
+    // Ouvrir une nouvelle fenêtre avec le contenu à imprimer
+    const printWindow = window.open('', '_blank');
+    printWindow.document.open();
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    
+    // Attendre que le contenu soit chargé avant d'imprimer
+    printWindow.onload = function() {
+      printWindow.focus();
+      
+      // Ajouter le gestionnaire d'événements pour l'exportation Excel
+      const exportButton = printWindow.document.getElementById('export-excel');
+      if (exportButton) {
+        exportButton.addEventListener('click', function() {
+          try {
+            // Désactiver le bouton pendant le chargement
+            const button = this;
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Préparation...';
+            
+            // Fonction pour gérer l'exportation une fois le script chargé
+            const handleExport = function() {
+              try {
+                // Préparer le nom du fichier avec la date
+                const now = new Date();
+                const dateStr = now.toISOString().split('T')[0];
+                const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-');
+                const fileName = `Commandes_${title.replace(/ /g, '_')}_${dateStr}_${timeStr}`;
+                
+                // Exporter vers CSV (format fiable et compatible avec Excel)
+                if (printWindow.exportToCSV) {
+                  printWindow.exportToCSV(orders, fileName);
+                } else if (printWindow.exportToExcel) {
+                  // Utiliser exportToExcel qui appelle maintenant exportToCSV
+                  printWindow.exportToExcel(orders, fileName);
+                } else {
+                  throw new Error('La fonction d\'exportation n\'est pas disponible');
+                }
+              } catch (error) {
+                console.error('Erreur lors de l\'exportation:', error);
+                printWindow.alert('Erreur lors de l\'exportation vers Excel: ' + error.message);
+              } finally {
+                // Réactiver le bouton dans tous les cas
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-file-excel"></i> Exporter vers Excel';
+              }
+            };
+            
+            // Si XLSX est déjà chargé, procéder directement à l'export
+            if (printWindow.XLSX) {
+              handleExport();
+            } else {
+              // Sinon, charger le script d'abord
+              printWindow.loadXLSXScript(handleExport);
+            }
+            
+          } catch (error) {
+            console.error('Erreur lors de la préparation de l\'exportation:', error);
+            printWindow.alert('Erreur lors de la préparation de l\'exportation: ' + error.message);
+            
+            // Réactiver le bouton en cas d'erreur
+            if (exportButton) {
+              exportButton.disabled = false;
+              exportButton.innerHTML = '<i class="fas fa-file-excel"></i> Exporter vers Excel';
+            }
+          }
+        });
+      }
+      
+      // Délai pour s'assurer que tout est chargé avant l'impression
+      setTimeout(() => {
+        printWindow.print();
+      }, 500);
+    };
+    
+    // Exposer les fonctions d'exportation à la fenêtre d'impression
+    printWindow.exportToCSV = exportToCSV;
+    printWindow.exportToExcel = exportToExcel;
+  } catch (error) {
+    console.error('Erreur lors de la génération du rapport:', error);
+    showNotification(`Erreur: ${error.message}`, 'error');
+  }
+}
+
+// Fonction pour initialiser la gestion des dates
+function initializeDateRangePicker() {
+  const today = formatDateForInput(new Date());
+  const startDateInput = document.getElementById('start-date');
+  const endDateInput = document.getElementById('end-date');
+  const useDateRangeCheckbox = document.getElementById('use-date-range');
+  
+  if (!startDateInput || !endDateInput || !useDateRangeCheckbox) return;
+  
+  startDateInput.value = today;
+  endDateInput.value = today;
+  
+  function updateDateInputsVisibility() {
+    const isRange = useDateRangeCheckbox.checked;
+    endDateInput.closest('div').style.display = isRange ? 'block' : 'none';
+    document.querySelector('label[for="start-date"]').textContent = 
+      isRange ? 'Date de début' : 'Sélectionner une date';
   }
   
-  // Permettre d'appuyer sur Entrée dans le champ de date pour déclencher l'impression
-  if (dateInput) {
-    dateInput.addEventListener('keypress', (e) => {
+  useDateRangeCheckbox.addEventListener('change', updateDateInputsVisibility);
+  updateDateInputsVisibility();
+  
+  startDateInput.addEventListener('change', function() {
+    if (!useDateRangeCheckbox.checked) {
+      endDateInput.value = this.value;
+    } else if (new Date(endDateInput.value) < new Date(this.value)) {
+      endDateInput.value = this.value;
+    }
+  });
+  
+  endDateInput.addEventListener('change', function() {
+    if (new Date(this.value) < new Date(startDateInput.value)) {
+      this.value = startDateInput.value;
+      showNotification('La date de fin ne peut pas être antérieure à la date de début', 'error');
+    }
+  });
+
+  [startDateInput, endDateInput].forEach(input => {
+    input.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
         printOrdersByDate();
       }
     });
+  });
+}
+
+// Initialiser la gestion des dates au chargement du DOM
+document.addEventListener('DOMContentLoaded', () => {
+  initializeDateRangePicker();
+  
+  // Ajouter un écouteur d'événement pour le bouton d'impression
+  const printButton = document.getElementById('print-orders');
+  if (printButton) {
+    printButton.addEventListener('click', printOrdersByDate);
   }
 });
 
@@ -628,11 +888,11 @@ async function updateDashboardCounters() {
         unreadMessagesElement.textContent = data.unreadMessages || 0;
       }
       
-      // Mettre à jour le chiffre d'affaires
+      // Mettre à jour le chiffre d'affaires (sans le symbole DH qui est déjà dans le HTML)
       const revenueElement = document.getElementById('revenue');
       if (revenueElement) {
         const revenue = parseFloat(data.revenue || 0);
-        revenueElement.textContent = `${revenue.toFixed(2)} DH`;
+        revenueElement.textContent = revenue.toFixed(2);
       }
     }
     
