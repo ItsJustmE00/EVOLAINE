@@ -197,7 +197,9 @@ function Cart({
                     <div className="ml-4 flex-1 flex flex-col">
                       <div>
                         <div className="flex justify-between text-base font-medium text-gray-900">
-                          <h3 className="font-semibold">{item.name}</h3>
+                          <h3 className="font-semibold">
+                            {t(`products.items.${item.id}.name`, { defaultValue: item.name })}
+                          </h3>
                           <p className="ml-4 font-bold">{item.price} {t('common.currency', 'DH')}</p>
                         </div>
                         {item.category && (

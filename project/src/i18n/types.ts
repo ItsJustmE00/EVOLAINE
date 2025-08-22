@@ -134,6 +134,12 @@ export interface CartFormTranslations {
   notesPlaceholder: string;
   processing: string;
   submit: string;
+  validation?: {
+    required: string;
+    invalidPhone: string;
+    addressTooShort: string;
+  };
+  fillRequiredFields?: string;
 }
 
 export interface CartSuccessTranslations {

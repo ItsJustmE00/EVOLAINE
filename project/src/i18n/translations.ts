@@ -79,11 +79,17 @@ export const fr: Translations = {
       firstName: "Prénom *",
       lastName: "Nom *",
       phone: "Téléphone *",
-      address: "Adresse complète *",
+      address: "Adresse de livraison *",
       notesOptional: "Notes (optionnel)",
       notesPlaceholder: "Instructions spéciales pour la livraison...",
-      processing: "Traitement...",
-      submit: "Passer la commande"
+      processing: "Traitement en cours...",
+      submit: "Valider la commande",
+      validation: {
+        required: "Ce champ est obligatoire",
+        invalidPhone: "Numéro de téléphone invalide (doit commencer par 06 ou 07 et contenir 10 chiffres)",
+        addressTooShort: "L'adresse est trop courte"
+      },
+      fillRequiredFields: "Veuillez remplir tous les champs obligatoires correctement"
     }
   },
   checkout: {
@@ -632,52 +638,56 @@ export const ar: Translations = {
       }
     }
   },
-  /* Section about déplacée plus haut dans le fichier */
-
   cart: {
     title: "سلة التسوق",
-    yourCart: "سلة التسوق الخاصة بك",
-    item: "عنصر",
-    items: "عناصر",
+    yourCart: "سلة التسوق",
     subtotal: "المجموع الفرعي",
     shipping: "الشحن",
-    shippingNotice: "يتم احتساب رسوم الشحن والضرائب عند الدفع.",
-    total: "الإجمالي",
-    remove: "حذف",
-    continueShopping: "متابعة التسوق",
+    shippingNotice: "سيتم احتساب رسوم الشحن والضرائب عند الدفع.",
+    total: "المجموع",
+    remove: "إزالة",
+    continueShopping: "مواصلة التسوق",
     checkout: "إتمام الطلب",
     orderNumber: "رقم الطلب",
+    quantity: "الكمية",
     close: "إغلاق",
     closeCart: "إغلاق السلة",
-    quantity: "الكمية",
     price: "السعر",
     decreaseQuantity: "تقليل الكمية",
     increaseQuantity: "زيادة الكمية",
-    noCategory: "غير مصنف",
+    noCategory: "بدون تصنيف",
     itemAdded: "تمت إضافة المنتج إلى السلة",
     itemRemoved: "تمت إزالة المنتج من السلة",
     updateQuantity: "تم تحديث الكمية",
     addItems: "إضافة منتجات",
-    summary: "الملخص",
+    summary: "ملخص الطلب",
+    item: "منتج",
+    items: "منتجات",
     emptyCart: {
       title: "سلة التسوق فارغة",
-      message: "تصفح منتجاتنا لإضافة عناصر إلى سلة التسوق.",
-      browseProducts: "عرض المنتجات"
+      message: "تصفح منتجاتنا لاكتشاف عروضنا",
+      browseProducts: "اكتشف منتجاتنا"
     },
     success: {
-      title: "تم تقديم الطلب بنجاح!",
-      message: "شكراً لطلبك. سنقوم بالتواصل معك قريباً للتأكيد.",
+      title: "تم تأكيد طلبك بنجاح!",
+      message: "شكراً لطلبك. سنتواصل معك قريباً لتأكيد التفاصيل.",
       backHome: "العودة إلى الصفحة الرئيسية"
     },
     form: {
-      firstName: "الاسم الشخصي *",
-      lastName: "الاسم العائلي *",
-      phone: "الهاتف *",
-      address: "العنوان الكامل *",
+      firstName: "الاسم الأول",
+      lastName: "اسم العائلة",
+      phone: "رقم الهاتف",
+      address: "عنوان التوصيل",
       notesOptional: "ملاحظات (اختياري)",
       notesPlaceholder: "تعليمات خاصة بالتوصيل...",
-      processing: "جارٍ المعالجة...",
-      submit: "إرسال الطلب"
+      processing: "جاري المعالجة...",
+      submit: "تأكيد الطلب",
+      validation: {
+        required: "هذا الحقل مطلوب",
+        invalidPhone: "رقم هاتف غير صالح (يجب أن يبدأ بـ 06 أو 07 ويتكون من 10 أرقام)",
+        addressTooShort: "العنوان قصير جداً"
+      },
+      fillRequiredFields: "الرجاء ملء جميع الحقول الإلزامية بشكل صحيح"
     }
   },
   checkout: {
