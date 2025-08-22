@@ -442,21 +442,68 @@ console.log('🌐 URL de l\'API configurée sur:', API_URL);
 console.log('admin.js chargé avec succès');
 
 // -----------------------------------------------------------------------------
-// Fonction pour imprimer les commandes du jour
-async function printTodayOrders() {
+// Fonction pour formater la date au format YYYY-MM-DD
+function formatDateForInput(date) {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+// Fonction pour formater la date en français
+function formatFrenchDate(dateString) {
+  const options = { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  };
+  return new Date(dateString).toLocaleDateString('fr-FR', options);
+}
+
+// Fonction pour imprimer les commandes par date
+async function printOrdersByDate() {
   try {
-    console.log('📄 Récupération des commandes du jour...');
-    const response = await fetch(`${API_URL}/api/orders/today`);
+    console.log('Début de la fonction printOrdersByDate');
+    const dateInput = document.getElementById('order-date');
+    const selectedDate = dateInput.value || formatDateForInput(new Date());
+    
+    console.log(`📄 Récupération des commandes pour le ${selectedDate}...`);
+    
+    // Mettre à jour l'input avec la date sélectionnée
+    dateInput.value = selectedDate;
+    
+    console.log(`Envoi de la requête à: ${API_URL}/api/orders/date/${selectedDate}`);
+    
+    const response = await fetch(`${API_URL}/api/orders/date/${selectedDate}`, {
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    console.log('Réponse reçue, statut:', response.status);
+    
     if (!response.ok) {
-      throw new Error(`Erreur HTTP ${response.status}`);
+      const errorText = await response.text();
+      console.error('Erreur de réponse:', errorText);
+      throw new Error(`Erreur HTTP ${response.status}: ${errorText}`);
     }
+    
     const data = await response.json();
-    if (!data || !data.data) {
-      throw new Error('Format de réponse inattendu');
+    console.log('Données reçues:', data);
+    
+    if (!data) {
+      throw new Error('Aucune donnée reçue du serveur');
     }
+    
+    // Si data est déjà un tableau, l'utiliser directement
+    const orders = Array.isArray(data) ? data : (data.data || []);
+    
+    console.log(`Nombre de commandes à afficher: ${orders.length}`);
 
     // Générer le contenu HTML imprimable
-    const orders = data.data;
     const htmlContent = `
       <html>
         <head>
@@ -470,7 +517,7 @@ async function printTodayOrders() {
           </style>
         </head>
         <body>
-          <h1>Commandes du ${new Date().toLocaleDateString()}</h1>
+          <h1>Commandes du ${formatFrenchDate(selectedDate)}</h1>
           <table>
             <thead>
               <tr>
@@ -517,18 +564,35 @@ async function printTodayOrders() {
     printWindow.print();
     printWindow.close();
   } catch (err) {
-    console.error('Erreur lors de l\'impression des commandes du jour:', err);
-    showNotification('Erreur lors de l\'impression des commandes', 'error');
+    console.error('Erreur lors de l\'impression des commandes:', err);
+    showNotification(`Erreur lors de l'impression: ${err.message}`, 'error');
   }
 }
 
-// Ajouter le listener après le chargement du DOM
+// Initialiser la date du jour au chargement du DOM
 document.addEventListener('DOMContentLoaded', () => {
-  const printBtn = document.getElementById('print-today-orders');
+  // Initialiser le sélecteur de date avec la date du jour
+  const dateInput = document.getElementById('order-date');
+  if (dateInput) {
+    dateInput.value = formatDateForInput(new Date());
+  }
+  
+  // Gestionnaire pour le bouton d'impression
+  const printBtn = document.getElementById('print-orders');
   if (printBtn) {
     printBtn.addEventListener('click', (e) => {
       e.preventDefault();
-      printTodayOrders();
+      printOrdersByDate();
+    });
+  }
+  
+  // Permettre d'appuyer sur Entrée dans le champ de date pour déclencher l'impression
+  if (dateInput) {
+    dateInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        printOrdersByDate();
+      }
     });
   }
 });

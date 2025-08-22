@@ -1405,21 +1405,70 @@ app.post('/api/orders', async (req, res) => {
  * Accès : Admin uniquement
  */
 // Route publique pour l'impression des commandes du jour depuis le panneau admin
-app.get('/api/orders/today', async (req, res) => {
+// Route pour récupérer les commandes d'une date spécifique
+app.get('/api/orders/date/:date', async (req, res) => {
+  const { date } = req.params;
   try {
-    const sql = `
-      SELECT *
-      FROM orders
-      WHERE created_at::date = CURRENT_DATE
-      ORDER BY created_at
+    console.log(`Récupération des commandes pour la date: ${date}`);
+    
+    // Vérifier que la date est valide
+    if (!date || isNaN(Date.parse(date))) {
+      return res.status(400).json({
+        success: false,
+        error: 'Format de date invalide. Utilisez le format YYYY-MM-DD.'
+      });
+    }
+    
+    // Récupérer les commandes pour la date spécifiée en tenant compte du fuseau horaire du Maroc (UTC+1)
+    const queryText = `
+      SELECT 
+        id,
+        first_name,
+        last_name,
+        phone,
+        address,
+        city,
+        notes,
+        total,
+        status,
+        items,
+        created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Africa/Casablanca' as created_at_local,
+        updated_at
+      FROM orders 
+      WHERE date(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Africa/Casablanca') = $1::date
+      ORDER BY created_at DESC
     `;
-
-    const { rows } = await pool.query(sql);
-
+    
+    console.log('Exécution de la requête:', queryText, 'avec la date:', date);
+    
+    const result = await pool.query(queryText, [date]);
+    
+    console.log(`Nombre de commandes trouvées: ${result.rows.length}`);
+    
+    // Formater la réponse pour inclure les items correctement
+    const orders = result.rows.map(order => {
+      // Convertir les dates en chaînes ISO pour éviter les problèmes de sérialisation
+      const formattedOrder = {
+        ...order,
+        // S'assurer que items est un tableau
+        items: Array.isArray(order.items) ? order.items : (order.items ? [order.items] : []),
+        // Convertir les dates en chaînes ISO
+        created_at: order.created_at_local ? 
+          new Date(order.created_at_local).toISOString() : 
+          new Date(order.created_at).toISOString(),
+        updated_at: order.updated_at ? new Date(order.updated_at).toISOString() : null
+      };
+      
+      // Supprimer le champ temporaire s'il existe
+      delete formattedOrder.created_at_local;
+      
+      return formattedOrder;
+    });
+    
     return res.json({
       success: true,
-      count: rows.length,
-      data: rows
+      data: orders,
+      count: orders.length
     });
   } catch (err) {
     console.error('Erreur lors de la récupération des commandes du jour:', err);
