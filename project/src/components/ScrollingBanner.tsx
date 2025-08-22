@@ -11,7 +11,7 @@ const ScrollingBanner = () => {
   // Messages avec traductions
   const messages = isRTL ? [
     // Messages en arabe avec emojis féminins
-    { id: 1, text: 'توصيل مجاني داخل أكادير', icon: '🚚' },
+    { id: 1, text: 'توصيل سريع داخل أكادير', icon: '🚚' },
     { id: 2, text: 'الدفع الآمن عند الاستلام', icon: '💳' },
     { id: 3, text: 'خدمة العملاء متاحة 24/7', icon: '💁‍♀️' },
     { id: 4, text: 'منتجات طبيعية 100% للعناية بالبشرة', icon: '🌸' },
@@ -24,7 +24,6 @@ const ScrollingBanner = () => {
     { id: 11, text: 'عناية شاملة بجمالكِ', icon: '💝' },
   ] : [
     // Messages en français avec emojis féminins
-    { id: 1, text: 'Livraison gratuite à Agadir', icon: '🚚' },
     { id: 2, text: 'Paiement sécurisé à la livraison', icon: '💳' },
     { id: 3, text: 'Service client 7j/7', icon: '💁‍♀️' },
     { id: 4, text: 'Produits 100% naturels', icon: '🌸' },
