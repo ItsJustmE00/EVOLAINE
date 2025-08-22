@@ -1446,24 +1446,14 @@ app.get('/api/orders/date/:date', async (req, res) => {
     console.log(`Nombre de commandes trouvées: ${result.rows.length}`);
     
     // Formater la réponse pour inclure les items correctement
-    const orders = result.rows.map(order => {
-      // Convertir les dates en chaînes ISO pour éviter les problèmes de sérialisation
-      const formattedOrder = {
-        ...order,
-        // S'assurer que items est un tableau
-        items: Array.isArray(order.items) ? order.items : (order.items ? [order.items] : []),
-        // Convertir les dates en chaînes ISO
-        created_at: order.created_at_local ? 
-          new Date(order.created_at_local).toISOString() : 
-          new Date(order.created_at).toISOString(),
-        updated_at: order.updated_at ? new Date(order.updated_at).toISOString() : null
-      };
-      
-      // Supprimer le champ temporaire s'il existe
-      delete formattedOrder.created_at_local;
-      
-      return formattedOrder;
-    });
+    const orders = result.rows.map(order => ({
+      ...order,
+      // S'assurer que items est un tableau
+      items: Array.isArray(order.items) ? order.items : (order.items ? [order.items] : []),
+      // Convertir les dates en chaînes ISO
+      created_at: new Date(order.created_at_local || order.created_at).toISOString(),
+      updated_at: order.updated_at ? new Date(order.updated_at).toISOString() : null
+    }));
     
     return res.json({
       success: true,
@@ -1475,6 +1465,75 @@ app.get('/api/orders/date/:date', async (req, res) => {
     return res.status(500).json({
       success: false,
       error: 'Erreur lors de la récupération des commandes du jour',
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+  }
+});
+
+// Récupérer les commandes sur une période donnée
+app.get('/api/orders/period', async (req, res) => {
+  try {
+    const { startDate, endDate = startDate } = req.query;
+    
+    // Vérifier que les dates sont valides
+    if (!startDate || isNaN(Date.parse(startDate)) || (endDate && isNaN(Date.parse(endDate)))) {
+      return res.status(400).json({
+        success: false,
+        error: 'Format de date invalide. Utilisez le format YYYY-MM-DD.'
+      });
+    }
+    
+    console.log(`Récupération des commandes de ${startDate} à ${endDate}`);
+    
+    // Récupérer les commandes pour la période spécifiée en tenant compte du fuseau horaire du Maroc (UTC+1)
+    const queryText = `
+      SELECT 
+        id,
+        first_name,
+        last_name,
+        phone,
+        address,
+        city,
+        notes,
+        total,
+        status,
+        items,
+        created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Africa/Casablanca' as created_at_local,
+        updated_at
+      FROM orders 
+      WHERE date(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Africa/Casablanca') BETWEEN $1::date AND $2::date
+      ORDER BY created_at DESC
+    `;
+    
+    console.log('Exécution de la requête de période:', queryText, 'avec les dates:', startDate, endDate);
+    
+    const result = await pool.query(queryText, [startDate, endDate]);
+    
+    console.log(`Nombre de commandes trouvées: ${result.rows.length}`);
+    
+    // Formater la réponse pour inclure les items correctement
+    const orders = result.rows.map(order => ({
+      ...order,
+      // S'assurer que items est un tableau
+      items: Array.isArray(order.items) ? order.items : (order.items ? [order.items] : []),
+      // Convertir les dates en chaînes ISO
+      created_at: new Date(order.created_at_local || order.created_at).toISOString(),
+      updated_at: order.updated_at ? new Date(order.updated_at).toISOString() : null
+    }));
+    
+    return res.json({
+      success: true,
+      data: orders,
+      count: orders.length,
+      startDate,
+      endDate
+    });
+    
+  } catch (err) {
+    console.error('Erreur lors de la récupération des commandes par période:', err);
+    return res.status(500).json({
+      success: false,
+      error: 'Erreur lors de la récupération des commandes par période',
       details: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
   }
