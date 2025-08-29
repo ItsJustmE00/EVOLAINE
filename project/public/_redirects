@@ -1,0 +1,2 @@
+# Redirection SPA - toutes les requêtes vers index.html sauf pour les fichiers statiques
+/* /index.html 200

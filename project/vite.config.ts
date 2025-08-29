@@ -30,7 +30,11 @@ export default defineConfig({
     sourcemap: isDevelopment,
     minify: isProduction ? 'esbuild' : false,
     emptyOutDir: true,
-    // Configuration minimale pour le build
+    // Configuration pour éviter les problèmes de routage
+    manifest: true,
+    // Configuration pour le chargement des assets
+    assetsInlineLimit: 0,
+    // Configuration pour le build
     rollupOptions: {
       output: {
         entryFileNames: 'assets/[name]-[hash].js',
@@ -38,8 +42,11 @@ export default defineConfig({
         assetFileNames: 'assets/[name]-[hash][extname]',
       }
     },
-    // Cibler des navigateurs modernes
-    target: 'es2015',
+    // Configuration pour le support SPA (Single Page Application)
+    target: 'esnext',
+    modulePreload: {
+      polyfill: false,
+    },
     // Activer le code splitting
     cssCodeSplit: true
   },

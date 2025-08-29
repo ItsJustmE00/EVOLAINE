@@ -10,7 +10,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "vercel-build": "npm run build"
+    "vercel-build": "node vercel-build.js"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
