@@ -1,5 +1,5 @@
 import React, { ButtonHTMLAttributes, forwardRef } from 'react';
-import { trackButtonClick } from '../../lib/facebookPixel';
+import { trackEvent } from '../../lib/facebookPixel';
 
 interface TrackedButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   trackingEvent: string;
@@ -34,14 +34,10 @@ const TrackedButton = forwardRef<HTMLButtonElement, TrackedButtonProps>(
     };
 
     const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-      // Suivre le clic avec Meta Pixel
-      trackButtonClick({
-        event_name: trackingEvent,
-        button_text: typeof children === 'string' ? children : '',
-        ...trackingData
-      });
-
-      // Exécuter le gestionnaire onClick original s'il existe
+      // Suivi de l'événement
+      trackEvent(trackingEvent, trackingData);
+      
+      // Appel du gestionnaire onClick original s'il existe
       if (onClick) {
         onClick(e);
       }

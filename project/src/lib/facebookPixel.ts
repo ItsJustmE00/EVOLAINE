@@ -1,5 +1,23 @@
 // src/lib/facebookPixel.ts
 
+// Déclaration des types pour fbq
+type FbqFunction = {
+  (command: 'track', event: string, parameters?: Record<string, any>): void;
+  (command: 'trackCustom', event: string, parameters?: Record<string, any>): void;
+  (command: 'init', pixelId: string): void;
+};
+
+declare global {
+  interface Window {
+    fbq: FbqFunction & {
+      pushed?: Array<any>;
+      loaded?: boolean;
+      version?: string;
+      queue?: Array<any>;
+    };
+  }
+}
+
 /**
  * Vérifie si le navigateur est compatible
  */
@@ -89,5 +107,21 @@ export const trackPurchase = (purchaseData: ContentData): void => {
     console.log('Événement Purchase envoyé:', purchaseData);
   } catch (error) {
     console.error('Erreur lors de l\'envoi de l\'événement Purchase:', error);
+  }
+};
+
+/**
+ * Suivi d'un événement personnalisé
+ * @param eventName - Nom de l'événement à suivre
+ * @param eventData - Données supplémentaires pour l'événement
+ */
+export const trackEvent = (eventName: string, eventData: Record<string, any> = {}): void => {
+  if (!ensureFBQ()) return;
+  
+  try {
+    window.fbq('trackCustom', eventName, eventData);
+    console.log(`Événement personnalisé ${eventName} envoyé:`, eventData);
+  } catch (error) {
+    console.error(`Erreur lors de l'envoi de l'événement personnalisé ${eventName}:`, error);
   }
 };
