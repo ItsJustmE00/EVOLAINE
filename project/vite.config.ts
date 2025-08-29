@@ -13,6 +13,9 @@ export default defineConfig({
   plugins: [react()],
   // Configuration de base pour les chemins d'accès
   base: isProduction ? '/' : '/',
+  define: {
+    'import.meta.env.BASE_URL': JSON.stringify(isProduction ? 'https://evolaine.vercel.app' : 'http://localhost:3000')
+  },
   
   // Configuration du build
   build: {
@@ -74,8 +77,8 @@ export default defineConfig({
             console.log('Requête proxy vers:', proxyReq.method, proxyReq.path);
             // Forcer les en-têtes pour éviter les problèmes CORS
             proxyReq.setHeader('host', new URL(apiUrl).host);
-            proxyReq.setHeader('origin', 'http://localhost:3000');
-            proxyReq.setHeader('referer', 'http://localhost:3000');
+            proxyReq.setHeader('origin', 'https://evolaine.vercel.app');
+            proxyReq.setHeader('referer', 'https://evolaine.vercel.app');
           });
         }
       }
