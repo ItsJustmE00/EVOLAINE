@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import Products from './components/Products';
@@ -16,6 +17,7 @@ import { NotificationProvider } from './components/ui/Notification';
 import ScrollToTop from './components/ScrollToTop';
 import ScrollingBanner from './components/ScrollingBanner';
 import FacebookPixel from './components/FacebookPixel';
+import { verifyPixelManually } from './utils/verifyPixel';
 import './i18n/i18n'; // Import de la configuration i18n
 
 // Composant pour gérer le défilement vers les sections (déplacé dans ScrollToTop)
@@ -26,6 +28,26 @@ const ScrollToSection = () => {
 };
 
 function App() {
+  const location = useLocation();
+  
+  // Vérification manuelle du Pixel Meta en développement
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    
+    if (import.meta.env.DEV) {
+      // Vérification après 3 secondes pour laisser le temps au pixel de s'initialiser
+      timer = setTimeout(() => {
+        console.log('=== VÉRIFICATION DU PIXEL META ===');
+        console.log('Chemin actuel:', location.pathname);
+        verifyPixelManually();
+      }, 3000);
+    }
+    
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [location.pathname]);
+  
   const Home = () => (
     <>
       <Hero />

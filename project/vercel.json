@@ -9,10 +9,19 @@
       }
     }
   ],
+  "env": {
+    "VITE_APP_ENV": "production",
+    "VITE_ENABLE_ANALYTICS": "true",
+    "VITE_META_PIXEL_ID": "743290068698217"
+  },
   "routes": [
     {
       "src": "/api/(.*)",
       "dest": "https://evolaine-backend.onrender.com/api/$1"
+    },
+    {
+      "src": "/_next/static/(.*)",
+      "dest": "/_next/static/$1"
     },
     {
       "handle": "filesystem"
