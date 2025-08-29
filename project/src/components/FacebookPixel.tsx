@@ -13,41 +13,27 @@ const FacebookPixel = () => {
   const location = useLocation();
   const pixelLoaded = useRef(false);
 
-  // Fonction pour charger le pixel de manière asynchrone
-  const loadPixel = () => {
-    // Vérifier si le pixel est déjà chargé
-    if (window.fbq?.loaded) {
-      pixelLoaded.current = true;
-      return true;
-    }
+  // Charger le script Facebook Pixel
+  useEffect(() => {
+    if (pixelLoaded.current) return;
 
-    try {
-      // Créer un script pour charger le pixel
+    // Créer un script pour charger le pixel
+    const loadPixel = () => {
+      // Charger le script principal
       const script = document.createElement('script');
       script.src = '/facebook-pixel.js';
       script.async = true;
       script.defer = true;
-      script.crossOrigin = 'anonymous';
       
       script.onload = () => {
         console.log('Facebook Pixel chargé avec succès');
         pixelLoaded.current = true;
-        
-        // Forcer un événement PageView après le chargement
-        if (window.fbq) {
-          window.fbq('track', 'PageView', {
-            page_path: location.pathname,
-            page_title: document.title
-          });
-        }
       };
       
       script.onerror = (error) => {
-        console.warn('Erreur lors du chargement du Pixel Facebook. Vérifiez votre bloqueur de publicités.');
-        console.error(error);
+        console.error('Erreur lors du chargement du Pixel Facebook:', error);
       };
       
-      // Ajouter le script au document
       document.head.appendChild(script);
       
       // Ajouter le code de suivi no-js
@@ -67,20 +53,10 @@ const FacebookPixel = () => {
           document.body.removeChild(noScript);
         }
       };
-    } catch (error) {
-      console.error('Erreur lors de l\'initialisation du Pixel Facebook:', error);
-      return false;
-    }
-  };
+    };
 
-  // Charger le pixel au montage du composant
-  useEffect(() => {
-    if (pixelLoaded.current) return;
-    
-    // Délai pour éviter de bloquer le rendu initial
-    const timer = setTimeout(() => {
-      loadPixel();
-    }, 1000);
+    // Charger le pixel après un court délai
+    const timer = setTimeout(loadPixel, 1000);
     
     return () => clearTimeout(timer);
   }, []);
@@ -89,23 +65,20 @@ const FacebookPixel = () => {
   useEffect(() => {
     if (!pixelLoaded.current) return;
     
-    const trackPageView = () => {
+    // Utiliser un setTimeout pour s'assurer que le DOM est mis à jour
+    const timer = setTimeout(() => {
       if (window.fbq) {
         window.fbq('track', 'PageView', {
           page_path: location.pathname,
           page_title: document.title
         });
       }
-    };
-    
-    // Délai pour s'assurer que le DOM est mis à jour
-    const timer = setTimeout(trackPageView, 100);
+    }, 100);
     
     return () => clearTimeout(timer);
   }, [location.pathname]);
 
-  // Rien à afficher
-  return null;
+  return null; // Ce composant ne rend rien
 };
 
 export default FacebookPixel;
