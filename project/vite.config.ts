@@ -21,12 +21,19 @@ export default defineConfig({
     sourcemap: isDevelopment,
     minify: isProduction ? 'esbuild' : false,
     emptyOutDir: true,
-    // Configuration minimale pour le build
+    manifest: true,
+    // Configuration du build
     rollupOptions: {
       output: {
         entryFileNames: 'assets/[name]-[hash].js',
         chunkFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash][extname]',
+        assetFileNames: (assetInfo) => {
+          if (!assetInfo.name) return 'assets/[name]-[hash][extname]';
+          const info = assetInfo.name.split('.');
+          const ext = info[info.length - 1];
+          if (ext === 'json') return 'assets/[name][extname]';
+          return 'assets/[name]-[hash][extname]';
+        },
       }
     },
     // Cibler des navigateurs modernes
