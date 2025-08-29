@@ -1,7 +1,6 @@
 // src/components/FacebookPixel.tsx
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { ensureFBQ } from '../lib/facebookPixel';
 
 declare global {
   interface Window {
@@ -12,62 +11,72 @@ declare global {
 
 const FacebookPixel = () => {
   const location = useLocation();
-  const [isInitialized, setIsInitialized] = useState(false);
+  const pixelLoaded = useRef(false);
 
+  // Charger le script Facebook Pixel
   useEffect(() => {
-    // Vérifier si le pixel est déjà initialisé
-    const checkPixelInitialized = () => {
-      if (window.fbq?.loaded) {
-        setIsInitialized(true);
-        return true;
-      }
-      return false;
+    if (pixelLoaded.current) return;
+
+    // Créer un script pour charger le pixel
+    const loadPixel = () => {
+      // Charger le script principal
+      const script = document.createElement('script');
+      script.src = '/facebook-pixel.js';
+      script.async = true;
+      script.defer = true;
+      
+      script.onload = () => {
+        console.log('Facebook Pixel chargé avec succès');
+        pixelLoaded.current = true;
+      };
+      
+      script.onerror = (error) => {
+        console.error('Erreur lors du chargement du Pixel Facebook:', error);
+      };
+      
+      document.head.appendChild(script);
+      
+      // Ajouter le code de suivi no-js
+      const noScript = document.createElement('noscript');
+      noScript.innerHTML = `
+        <img height="1" width="1" style="display:none" 
+             src="https://www.facebook.com/tr?id=743290068698217&ev=PageView&noscript=1"
+             alt="" />
+      `;
+      document.body.appendChild(noScript);
+      
+      return () => {
+        if (document.head.contains(script)) {
+          document.head.removeChild(script);
+        }
+        if (document.body.contains(noScript)) {
+          document.body.removeChild(noScript);
+        }
+      };
     };
 
-    // Essayer de vérifier immédiatement
-    if (checkPixelInitialized()) {
-      return;
-    }
-
-    // Sinon, attendre un peu et réessayer
-    const timer = setTimeout(() => {
-      if (checkPixelInitialized()) {
-        clearInterval(interval);
-      }
-    }, 500);
-
-    // Vérifier périodiquement
-    const interval = setInterval(() => {
-      if (checkPixelInitialized()) {
-        clearInterval(interval);
-      }
-    }, 1000);
-
-    // Nettoyer les intervalles lors du démontage
-    return () => {
-      clearTimeout(timer);
-      clearInterval(interval);
-    };
+    // Charger le pixel après un court délai
+    const timer = setTimeout(loadPixel, 1000);
+    
+    return () => clearTimeout(timer);
   }, []);
 
   // Suivi des changements de page
   useEffect(() => {
-    if (!isInitialized) return;
+    if (!pixelLoaded.current) return;
     
-    const trackPageView = () => {
-      if (ensureFBQ()) {
+    // Utiliser un setTimeout pour s'assurer que le DOM est mis à jour
+    const timer = setTimeout(() => {
+      if (window.fbq) {
         window.fbq('track', 'PageView', {
           page_path: location.pathname,
           page_title: document.title
         });
       }
-    };
-
-    // Délai pour s'assurer que la page est complètement chargée
-    const timer = setTimeout(trackPageView, 100);
+    }, 100);
     
     return () => clearTimeout(timer);
-  }, [location.pathname, isInitialized]);
+  }, [location.pathname]);
 
   return null; // Ce composant ne rend rien
 };
