@@ -1,5 +1,7 @@
 {
   "version": 2,
+  "name": "evolaine-frontend",
+  "public": true,
   "builds": [
     {
       "src": "package.json",
@@ -18,5 +20,13 @@
       "src": "/(.*)",
       "dest": "/index.html"
     }
-  ]
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "build": {
+    "env": {
+      "VITE_APP_ENV": "production"
+    }
+  }
 }

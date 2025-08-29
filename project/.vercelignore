@@ -1,0 +1,34 @@
+# Fichiers à ignorer pour le déploiement Vercel
+.git
+.gitignore
+.vercel
+.vscode
+node_modules
+*.log
+.DS_Store
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Fichiers de configuration
+vercel.json
+vercel-build.js
+
+# Fichiers de build
+/dist
+/build
+
+# Fichiers de test
+**/__tests__
+**/*.test.*
+**/*.spec.*
+
+# Fichiers de couverture
+coverage
+.nyc_output
+
+# Fichiers de débogage
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
