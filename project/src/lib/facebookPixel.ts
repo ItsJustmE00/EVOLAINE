@@ -61,27 +61,73 @@ export interface ContentData {
 }
 
 /**
+ * Envoie un événement de visualisation de contenu à Facebook Pixel
+ * @param parameters - Paramètres de l'événement de visualisation
+ */
+export const trackViewContent = (parameters: {
+  content_ids?: (string | number)[];
+  content_name?: string;
+  content_type?: string;
+  content_category?: string;
+  value?: number;
+  currency?: string;
+}): void => {
+  if (!canUseDOM() || !window.fbq) return;
+  
+  window.fbq('track', 'ViewContent', {
+    ...parameters,
+    content_ids: parameters.content_ids?.map(String) // S'assure que les IDs sont des strings
+  });
+};
+
+/**
  * Suivi de l'ajout au panier
  * @param cartData - Données du panier
  */
-export const trackAddToCart = (cartData: ContentData): void => {
+export const trackAddToCart = (cartData: ContentData | {
+  content_ids?: (string | number)[];
+  content_name?: string;
+  content_type?: string;
+  content_category?: string;
+  value?: number;
+  currency?: string;
+  contents?: Array<{
+    id: string | number;
+    quantity: number;
+    item_price?: number;
+  }>;
+  id?: string | number;
+  quantity?: number;
+  item_price?: number;
+}): void => {
   if (!ensureFBQ()) return;
   
   try {
-    window.fbq('track', 'AddToCart', {
-      content_ids: cartData.content_ids || [cartData.id],
+    const contentIds = cartData.content_ids || 
+      (cartData.contents ? cartData.contents.map(item => item.id) : 
+      (cartData as any).id ? [(cartData as any).id] : undefined);
+    
+    const contents = cartData.contents || 
+      ((cartData as any).id ? [{
+        id: (cartData as any).id,
+        quantity: (cartData as any).quantity || 1,
+        item_price: (cartData as any).item_price
+      }] : undefined);
+    
+    const eventData: Record<string, any> = {
+      content_ids: contentIds,
       content_type: cartData.content_type || 'product',
-      content_name: cartData.content_name,
-      content_category: cartData.content_category,
       value: cartData.value,
-      currency: cartData.currency || 'EUR',
-      contents: cartData.contents || [{
-        id: cartData.id,
-        quantity: cartData.quantity || 1,
-        item_price: cartData.item_price
-      }],
-    });
-    console.log('Événement AddToCart envoyé:', cartData);
+      currency: cartData.currency || 'MAD',
+      contents: contents
+    };
+    
+    // Ajouter les champs optionnels uniquement s'ils sont définis
+    if (cartData.content_name) eventData.content_name = cartData.content_name;
+    if (cartData.content_category) eventData.content_category = cartData.content_category;
+    
+    window.fbq('track', 'AddToCart', eventData);
+    console.log('Événement AddToCart envoyé:', eventData);
   } catch (error) {
     console.error('Erreur lors de l\'envoi de l\'événement AddToCart:', error);
   }
@@ -91,19 +137,41 @@ export const trackAddToCart = (cartData: ContentData): void => {
  * Suivi d'un achat complété
  * @param purchaseData - Données de l'achat
  */
-export const trackPurchase = (purchaseData: ContentData): void => {
+export const trackPurchase = (purchaseData: ContentData | {
+  value: number;
+  currency: string;
+  content_type?: string;
+  contents?: Array<{
+    id: string | number;
+    quantity: number;
+    item_price: number;
+  }>;
+  order_id?: string | number;
+  content_ids?: (string | number)[];
+  content_name?: string;
+  content_category?: string;
+  num_items?: number;
+}): void => {
   if (!ensureFBQ()) return;
   
   try {
+    const contentIds = purchaseData.content_ids || 
+      (purchaseData.contents ? purchaseData.contents.map(item => item.id) : 
+      (purchaseData as any).id ? [(purchaseData as any).id] : undefined);
+    
     window.fbq('track', 'Purchase', {
-      content_ids: purchaseData.content_ids || [purchaseData.id],
+      content_ids: contentIds,
       content_type: purchaseData.content_type || 'product',
-      contents: purchaseData.contents,
-      num_items: purchaseData.num_items,
+      contents: (purchaseData as any).contents,
+      num_items: (purchaseData as any).num_items || 
+        (purchaseData.contents ? purchaseData.contents.reduce((sum, item) => sum + item.quantity, 0) : 1),
       value: purchaseData.value,
-      currency: purchaseData.currency || 'EUR',
+      currency: purchaseData.currency || 'MAD',
       order_id: purchaseData.order_id,
+      content_name: (purchaseData as any).content_name,
+      content_category: (purchaseData as any).content_category,
     });
+    
     console.log('Événement Purchase envoyé:', purchaseData);
   } catch (error) {
     console.error('Erreur lors de l\'envoi de l\'événement Purchase:', error);
@@ -111,17 +179,56 @@ export const trackPurchase = (purchaseData: ContentData): void => {
 };
 
 /**
- * Suivi d'un événement personnalisé
- * @param eventName - Nom de l'événement à suivre
- * @param eventData - Données supplémentaires pour l'événement
+ * Envoie un événement personnalisé à Facebook Pixel
+ * @param eventName - Nom de l'événement personnalisé
+ * @param parameters - Paramètres de l'événement
  */
-export const trackEvent = (eventName: string, eventData: Record<string, any> = {}): void => {
+export const trackEvent = (eventName: string, parameters?: Record<string, any>): void => {
+  if (!canUseDOM() || !window.fbq) return;
+  window.fbq('trackCustom', eventName, parameters);
+};
+
+/**
+ * Suivi de l'initiation du processus de paiement
+ * @param parameters - Paramètres de l'événement d'initiation au paiement
+ */
+export const trackInitiateCheckout = (parameters: {
+  content_ids?: (string | number)[];
+  content_name?: string;
+  content_type?: string;
+  content_category?: string;
+  value?: number;
+  currency?: string;
+  contents?: Array<{
+    id: string | number;
+    quantity: number;
+    item_price?: number;
+  }>;
+  num_items?: number;
+}): void => {
   if (!ensureFBQ()) return;
   
   try {
-    window.fbq('trackCustom', eventName, eventData);
-    console.log(`Événement personnalisé ${eventName} envoyé:`, eventData);
+    const eventData: Record<string, any> = {
+      content_ids: parameters.content_ids || 
+        (parameters.contents ? parameters.contents.map(item => item.id) : undefined),
+      content_type: parameters.content_type || 'product',
+      value: parameters.value,
+      currency: parameters.currency || 'MAD',
+      contents: parameters.contents,
+      num_items: parameters.num_items || 
+        (parameters.contents ? parameters.contents.reduce((sum, item) => sum + (item.quantity || 1), 0) : 1)
+    };
+    
+    // Ajouter les champs optionnels uniquement s'ils sont définis
+    if (parameters.content_name) eventData.content_name = parameters.content_name;
+    if (parameters.content_category) eventData.content_category = parameters.content_category;
+    
+    window.fbq('track', 'InitiateCheckout', eventData);
+    console.log('Événement InitiateCheckout envoyé:', eventData);
   } catch (error) {
-    console.error(`Erreur lors de l'envoi de l'événement personnalisé ${eventName}:`, error);
+    console.error('Erreur lors de l\'envoi de l\'événement InitiateCheckout:', error);
   }
 };
+
+
