@@ -1,11 +1,12 @@
 // @ts-nocheck
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 // Base URL de l'API
 const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL?.replace(/\/$/, '') || '';
 import { useCart } from '../contexts/CartContext';
+import { useTrackCheckout } from '../hooks/useTrackCheckout';
 
 interface FormValues {
   firstName: string;
@@ -20,6 +21,26 @@ const CheckoutForm = () => {
   const { cartItems, cartTotal, clearCart } = useCart();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [orderId, setOrderId] = useState<string | null>(null);
+  
+  // Suivi du processus de paiement
+  useTrackCheckout(
+    cartItems.length > 0
+      ? {
+          content_ids: cartItems.map(item => item.id),
+          value: cartTotal,
+          currency: 'MAD',
+          contents: cartItems.map(item => ({
+            id: item.id,
+            quantity: item.quantity,
+            item_price: parseFloat(item.price.replace(/[^0-9.,]/g, '').replace(',', '.')),
+          })),
+          order_id: orderId || undefined,
+        }
+      : null,
+    true, // Suivre l'initiation du paiement
+    !!orderId // Suivre l'achat si orderId est défini
+  );
   
   const [formData, setFormData] = useState<FormValues>({
     firstName: '',
@@ -90,6 +111,7 @@ const CheckoutForm = () => {
     
     const phoneRegex = /^(06|07)\d{8}$/;
 
+    // Valider chaque champ requis
     fields.forEach(field => {
       const value = formData[field.name as keyof FormValues] || '';
       if (field.required && !value.toString().trim()) {
@@ -104,13 +126,19 @@ const CheckoutForm = () => {
       }
     });
     
-    setErrors(newErrors);
-    
-    if (!isValid) return;
+    if (!isValid) {
+      setErrors(newErrors);
+      return;
+    }
     
     setIsSubmitting(true);
     
     try {
+      // Générer un ID de commande unique
+      const generatedOrderId = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      setOrderId(generatedOrderId);
+      
+      // Envoyer la commande à l'API
       const response = await fetch(`${API_BASE}/api/orders`, {
         method: 'POST',
         headers: {
@@ -118,29 +146,29 @@ const CheckoutForm = () => {
         },
         body: JSON.stringify({
           ...formData,
+          orderId: generatedOrderId,
           items: cartItems,
           total: cartTotal,
           status: 'pending',
-          city: 'Non spécifiée', // Valeur par défaut
-          notes: '' // Valeur par défaut
-        })
+        }),
       });
-
-      let data: any = null;
-      const contentType = response.headers.get('content-type') || '';
-      if (contentType.includes('application/json')) {
-        data = await response.json();
-      } else {
-        const text = await response.text();
-        try { data = JSON.parse(text); } catch { data = { message: text }; }
-      }
-
+      
       if (!response.ok) {
-        throw new Error(data?.error || data?.message || 'Erreur lors de la soumission de la commande');
+        throw new Error('Erreur lors de la soumission de la commande');
       }
-
-      clearCart(); // Vider le panier après une commande réussie
-      navigate(`/confirmation/${data.id || ''}`);
+      
+      const responseData = await response.json();
+      
+      // Vider le panier après une commande réussie
+      clearCart();
+      
+      // Rediriger vers la page de confirmation avec l'ID de commande
+      navigate('/confirmation', { 
+        state: { 
+          orderId: responseData.id || generatedOrderId,
+          orderDetails: responseData
+        } 
+      });
       
     } catch (error) {
       console.error('Erreur:', error);

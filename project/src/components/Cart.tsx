@@ -1,45 +1,37 @@
-// @ts-nocheck
 import { useState, useCallback, lazy, Suspense } from 'react';
 import { ShoppingBag, Plus, Minus, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useCart } from '../contexts/CartContext';
 import { SimpleCartItem } from '../types/cart';
 
-// Désactivation temporaire des vérifications de type pour ce fichier
-// pour résoudre les problèmes de profondeur de type
-
-// Importation dynamique du composant CheckoutForm avec gestion d'erreur
+// Importation dynamique du composant CheckoutForm
 const CheckoutForm = lazy(() => import('./CheckoutForm')
   .then(module => ({ default: module.default }))
-  .catch((error) => {
-    console.error('Erreur lors du chargement du composant CheckoutForm:', error);
-    return { 
-      default: () => (
-        <div className="p-4 text-red-600">
-          Erreur de chargement du formulaire. Veuillez réessayer plus tard.
-        </div>
-      ) 
-    };
-  })
+  .catch(() => ({
+    default: () => (
+      <div className="p-4 text-red-600">
+        Erreur de chargement du formulaire. Veuillez réessayer plus tard.
+      </div>
+    )
+  }))
 );
 
-// Types simplifiés au maximum
-type FormValues = Record<string, unknown>;
+// Props du composant Cart
+interface CartProps {
+  isModal?: boolean;
+  showCheckoutButton?: boolean;
+}
 
-// Composant principal simplifié
+// Composant principal du panier
 function Cart({
   isModal = true,
   showCheckoutButton = true
-}: {
-  isModal?: boolean;
-  showCheckoutButton?: boolean;
-}) {
+}: CartProps) {
   // États locaux
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
-  const [orderPlaced, setOrderPlaced] = useState(false);
   
   // Utilisation du contexte sans typage strict pour éviter les erreurs
-  const { cart = [], cartTotal = 0, itemCount = 0, removeFromCart, updateQuantity, clearCart } = useCart() || {};
+  const { cart = [], cartTotal = 0, itemCount = 0, removeFromCart, updateQuantity } = useCart() || {};
   const { t } = useTranslation();
   
   // Gestion du clic sur le bouton de commande
@@ -66,48 +58,6 @@ function Cart({
     ? 'sticky bottom-0 bg-white border-t border-gray-200 p-3 sm:p-4'
     : 'border-t border-gray-200 p-4 sm:p-6';
 
-  // Gestion de la soumission du formulaire
-  const handleOrderSubmit = useCallback(async (data: FormValues) => {
-    console.log('Données de commande:', data);
-    // Simulation de délai de traitement
-    await new Promise<void>(resolve => setTimeout(resolve, 1500));
-    // TODO: Implémenter la logique de soumission réelle ici
-    
-    // Réinitialiser le panier et afficher le message de succès
-    clearCart();
-    setOrderPlaced(true);
-    setShowCheckoutForm(false);
-  }, [clearCart]);
-
-  // Si la commande a été passée avec succès
-  if (orderPlaced) {
-    // Récupérer les traductions une seule fois pour éviter les problèmes de rendu
-    const successTitle = t('cart.success.title', 'Commande confirmée !');
-    const successMessage = t('cart.success.message', 'Merci pour votre commande. Nous vous contacterons bientôt pour confirmer.');
-    const backHomeText = t('cart.success.backHome', 'Retour à l\'accueil');
-    
-    return (
-      <div className="flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 text-center">
-        <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
-          <svg className="h-10 w-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-        </div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">
-          {typeof successTitle === 'string' ? successTitle : 'Commande confirmée !'}
-        </h3>
-        <p className="text-gray-600 mb-6">
-          {typeof successMessage === 'string' ? successMessage : 'Merci pour votre commande. Nous vous contacterons bientôt pour confirmer.'}
-        </p>
-        <button
-          onClick={handleContinueShopping}
-          className="inline-flex items-center px-6 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-pink-600 hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
-        >
-          {typeof backHomeText === 'string' ? backHomeText : 'Retour à l\'accueil'}
-        </button>
-      </div>
-    );
-  }
 
   // Gestion de la navigation pour continuer les achats
   const handleContinueShopping = useCallback((e?: React.MouseEvent) => {
@@ -123,11 +73,14 @@ function Cart({
         // Sinon on redirige vers la page d'accueil
         window.location.href = '/';
       }
-    } catch (error) {
-      console.error('Erreur lors de la navigation:', error);
+    } catch {
       window.location.href = '/';
     }
   }, [isModal]);
+
+  // La gestion de la commande passée avec succès est maintenant gérée par le composant CheckoutForm
+
+
 
   // Gestion de l'annulation du formulaire
   const handleCancelCheckout = useCallback(() => {
@@ -212,18 +165,16 @@ function Cart({
                         <div className="flex items-center border border-gray-300 rounded-md w-fit">
                           <button
                             type="button"
-                            onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
+                            onClick={() => updateQuantity(Number(item.id), Math.max(1, Number(item.quantity) - 1))}
                             className="px-2 sm:px-3 py-1 text-gray-600 hover:bg-gray-100 rounded-l-md transition-colors"
                             aria-label={t('cart.decreaseQuantity', 'Diminuer la quantité')}
                           >
                             <Minus className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                           </button>
-                          <span className="px-2 sm:px-3 py-1 text-sm font-medium text-gray-700 bg-white border-x border-gray-300">
-                            {item.quantity}
-                          </span>
+                          <span className="mx-2 text-sm font-medium">{item.quantity}</span>
                           <button
                             type="button"
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            onClick={() => updateQuantity(Number(item.id), Number(item.quantity) + 1)}
                             className="px-2 sm:px-3 py-1 text-gray-600 hover:bg-gray-100 rounded-r-md transition-colors"
                             aria-label={t('cart.increaseQuantity', 'Augmenter la quantité')}
                           >
@@ -317,7 +268,7 @@ function Cart({
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600"></div>
                 </div>
               }>
-                <CheckoutForm onSubmit={handleOrderSubmit} />
+                <CheckoutForm />
               </Suspense>
             </div>
             

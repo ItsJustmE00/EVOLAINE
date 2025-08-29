@@ -1,9 +1,11 @@
 // @ts-nocheck
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ShoppingBag, User, Phone, MapPin } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { products } from '../data/products';
 import Cart from './Cart';
+import TrackedButton from './ui/TrackedButton';
 // Base URL de l'API (variables d'environnement Vite)
 const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL?.replace(/\/$/, '') || '';
 import { useCart } from '../contexts/CartContext';
@@ -12,7 +14,10 @@ import { useCart } from '../contexts/CartContext';
 
 const CartPage = () => {
   const { t } = useTranslation();
-  const { itemCount, cartTotal, clearCart, cart } = useCart();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { itemCount, cartTotal, clearCart, cart, addToCart, updateQuantity } = useCart();
+  const [isInitialized, setIsInitialized] = useState(false);
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -38,6 +43,63 @@ const CartPage = () => {
   });
   const [orderConfirmed, setOrderConfirmed] = useState(false);
   const [orderNumber] = useState(`CMD-${Math.floor(100000 + Math.random() * 900000)}`);
+
+  // Gestion de l'ajout automatique de produit via l'URL
+  useEffect(() => {
+    const handleDirectCheckout = async () => {
+      if (isInitialized) {
+        return;
+      }
+      
+      const searchParams = new URLSearchParams(location.search);
+      const productId = searchParams.get('productId');
+      const quantity = parseInt(searchParams.get('quantity') || '1', 10);
+      const isDirect = searchParams.get('direct') === 'true';
+      
+      if (productId && !isNaN(quantity) && quantity > 0) {
+        const productIdNum = parseInt(productId, 10);
+        const productToAdd = products.find(p => p.id === productIdNum);
+        
+        if (productToAdd) {
+          try {
+            addToCart(productToAdd);
+            
+            if (quantity > 1) {
+              setTimeout(() => {
+                updateQuantity(productIdNum, quantity);
+              }, 500);
+            }
+            
+            if (isDirect) {
+              setTimeout(() => {
+                window.scrollTo({
+                  top: document.body.scrollHeight,
+                  behavior: 'smooth'
+                });
+                
+                navigate('/cart', { 
+                  replace: true, 
+                  state: { 
+                    fromDirectLink: true,
+                    productAdded: true,
+                    productId: productIdNum
+                  } 
+                });
+              }, 1000);
+            }
+          } catch (error) {
+            // Gestion silencieuse des erreurs
+          }
+        }
+      }
+      
+      setIsInitialized(true);
+    };
+    
+    handleDirectCheckout();
+    
+    return () => {};
+  }, [location.search, addToCart, updateQuantity, navigate, isInitialized, cart]);
 
   const validateField = (name: string, value: string) => {
     switch (name) {
@@ -248,9 +310,10 @@ const CartPage = () => {
     <div className="min-h-screen bg-gray-50 pt-24 pb-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* En-tête de la page */}
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            {t('cart.yourCart', 'Votre panier')}
+        <div className="container mx-auto px-4 py-8">
+          <h1 className="text-3xl font-bold text-gray-800 mb-8">
+            <ShoppingBag className="inline-block mr-2" />
+            {t('cart.title', 'Votre Panier')}
           </h1>
           {itemCount > 0 && (
             <p className="text-gray-600">
@@ -421,18 +484,24 @@ const CartPage = () => {
                       <p>{t('cart.total', 'Total')}</p>
                       <p>{cartTotal} {t('common.currency', 'DH')}</p>
                     </div>
-                    <button
+                    <TrackedButton
                       type="submit"
                       disabled={!isFormValid()}
-                      className={`w-full flex justify-center items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white ${
-                        isFormValid()
-                          ? 'bg-pink-600 hover:bg-pink-700 focus:ring-2 focus:ring-offset-2 focus:ring-pink-500'
-                          : 'bg-pink-400 cursor-not-allowed'
-                      } focus:outline-none`}
+                      variant={isFormValid() ? 'primary' : 'secondary'}
+                      fullWidth
+                      size="lg"
+                      trackingEvent="checkout_submit"
+                      trackingData={{
+                        cart_total: cartTotal,
+                        item_count: itemCount,
+                        currency: 'MAD',
+                        form_data: formData
+                      }}
+                      className={!isFormValid() ? 'opacity-75 cursor-not-allowed' : ''}
                       aria-disabled={!isFormValid()}
                     >
                       {t('checkout.submit', 'Confirmer la commande')}
-                    </button>
+                    </TrackedButton>
                     {!isFormValid() && (
                       <p className="mt-2 text-sm text-gray-500 text-center">
                         Veuillez remplir tous les champs obligatoires correctement

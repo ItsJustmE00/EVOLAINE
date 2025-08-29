@@ -1,4 +1,3 @@
-
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/Header';
 import Hero from './components/Hero';
@@ -8,6 +7,7 @@ import Testimonials from './components/Testimonials';
 import Contact from './components/Contact';
 import CartPage from './components/CartPage';
 import ProductDetails from './components/ProductDetails';
+import ConfirmationPage from './pages/ConfirmationPage';
 import Footer from './components/Footer';
 import { ProductSelectionProvider } from './contexts/ProductSelectionContext';
 import { CartProvider } from './contexts/CartContext';
@@ -15,6 +15,7 @@ import { LanguageProvider } from './contexts/LanguageContext';
 import { NotificationProvider } from './components/ui/Notification';
 import ScrollToTop from './components/ScrollToTop';
 import ScrollingBanner from './components/ScrollingBanner';
+import FacebookPixel from './components/FacebookPixel';
 import './i18n/i18n'; // Import de la configuration i18n
 
 // Composant pour gérer le défilement vers les sections (déplacé dans ScrollToTop)
@@ -37,12 +38,13 @@ function App() {
 
   return (
     <LanguageProvider>
-      <CartProvider>
-        <ProductSelectionProvider>
+      <ProductSelectionProvider>
+        <CartProvider>
           <NotificationProvider>
+            <FacebookPixel />
             <div className="min-h-screen flex flex-col">
-              <ScrollingBanner />
               <Header />
+              <ScrollingBanner />
               <ScrollToTop />
               <ScrollToSection />
               <main className="flex-grow">
@@ -51,14 +53,16 @@ function App() {
                   <Route path="/products" element={<Products />} />
                   <Route path="/cart" element={<CartPage />} />
                   <Route path="/product/:id" element={<ProductDetails />} />
+                  <Route path="/confirmation" element={<ConfirmationPage />} />
                   <Route path="/panier" element={<Navigate to="/cart" replace />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </main>
               <Footer />
             </div>
           </NotificationProvider>
-        </ProductSelectionProvider>
-      </CartProvider>
+        </CartProvider>
+      </ProductSelectionProvider>
     </LanguageProvider>
   );
 }

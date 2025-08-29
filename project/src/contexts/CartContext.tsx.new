@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { Product } from '../types/product';
 import { useTrackCart } from '../hooks/useTrackCart';
 
-type CartItem = {
+export type CartItem = {
   id: number;
   name: string;
   description: string;
@@ -162,5 +162,3 @@ export const useCart = (): CartContextType => {
 };
 
 export default CartContext;
-
-export type { CartItem };

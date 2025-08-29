@@ -8,6 +8,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useCart } from '../contexts/CartContext';
 import { products } from '../data/products';
 import { useNotification } from './ui/Notification';
+import { useTrackProductView } from '../hooks/useTrackProductView';
 
 // Using type assertions to avoid complex type inference
 // @ts-ignore - Ignore type checking for the entire file to prevent deep instantiation errors
@@ -29,6 +30,19 @@ export default function ProductDetails() {
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
   
+  // Track product view
+  useTrackProductView(
+    product
+      ? {
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          category: product.category,
+          currency: 'MAD',
+        }
+      : undefined
+  );
+
   // Update translations when language changes
   const updateTranslations = useCallback(() => {
     if (!id) return;

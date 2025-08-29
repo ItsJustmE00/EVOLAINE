@@ -27,6 +27,15 @@
   "common": {
     "change_language": "Changer de langue"
   },
+  "confirmation": {
+    "thankYou": "Merci pour votre commande !",
+    "orderReceived": "Votre commande a été reçue et est en cours de traitement.",
+    "orderNumber": "Numéro de commande",
+    "orderDetails": "Détails de la commande",
+    "items": "Articles commandés",
+    "taxesIncluded": "TVA incluse, frais de livraison calculés à l'étape suivante.",
+    "continueShopping": "Continuer vos achats"
+  },
   "testimonials": {
     "title": "Avis clients",
     "subtitle": "Découvrez ce que pensent nos clients de nos produits {{brand}}",
