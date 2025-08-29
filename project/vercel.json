@@ -5,27 +5,20 @@
       "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "dist",
-        "zeroConfig": true
+        "distDir": "dist"
       }
     }
   ],
-  "env": {
-    "VITE_APP_ENV": "production",
-    "VITE_ENABLE_ANALYTICS": "true",
-    "VITE_META_PIXEL_ID": "743290068698217"
-  },
   "routes": [
     {
       "src": "/api/(.*)",
       "dest": "https://evolaine-backend.onrender.com/api/$1"
     },
     {
-      "src": "/assets/(.*)",
-      "headers": { "cache-control": "public, max-age=31536000, immutable" }
+      "handle": "filesystem"
     },
     {
-      "src": "^/(?!api|_next/static|_next/image|assets|favicon.ico).*$",
+      "src": "/(.*)",
       "dest": "/index.html"
     }
   ]

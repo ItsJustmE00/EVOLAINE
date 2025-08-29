@@ -1,22 +1,13 @@
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath } from 'url';
 
-// Chargement des variables d'environnement
-const env = loadEnv('all', process.cwd(), '');
-
 // Configuration pour le mode développement et production
-const isDevelopment = env.VITE_APP_ENV === 'development' || env.NODE_ENV === 'development';
-const isProduction = env.VITE_APP_ENV === 'production' || env.NODE_ENV === 'production';
+const isDevelopment = process.env.NODE_ENV === 'development';
+const isProduction = process.env.NODE_ENV === 'production';
 const apiUrl = isDevelopment 
   ? 'http://localhost:3004' 
   : 'https://evolaine-backend.onrender.com';
-
-// Log des variables d'environnement pour le débogage
-console.log('Mode:', isProduction ? 'Production' : 'Développement');
-console.log('API URL:', apiUrl);
-console.log('Meta Pixel ID:', env.VITE_META_PIXEL_ID || 'Non défini');
-console.log('Analytics activé:', env.VITE_ENABLE_ANALYTICS || 'false');
 
 export default defineConfig({
   plugins: [react()],
@@ -30,11 +21,7 @@ export default defineConfig({
     sourcemap: isDevelopment,
     minify: isProduction ? 'esbuild' : false,
     emptyOutDir: true,
-    // Configuration pour éviter les problèmes de routage
-    manifest: true,
-    // Configuration pour le chargement des assets
-    assetsInlineLimit: 0,
-    // Configuration pour le build
+    // Configuration minimale pour le build
     rollupOptions: {
       output: {
         entryFileNames: 'assets/[name]-[hash].js',
@@ -42,11 +29,8 @@ export default defineConfig({
         assetFileNames: 'assets/[name]-[hash][extname]',
       }
     },
-    // Configuration pour le support SPA (Single Page Application)
-    target: 'esnext',
-    modulePreload: {
-      polyfill: false,
-    },
+    // Cibler des navigateurs modernes
+    target: 'es2015',
     // Activer le code splitting
     cssCodeSplit: true
   },

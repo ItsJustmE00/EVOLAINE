@@ -8,8 +8,7 @@ declare global {
 }
 
 // ID du pixel Meta (Facebook)
-const PIXEL_ID = import.meta.env.VITE_META_PIXEL_ID || '743290068698217';
-const ENABLE_ANALYTICS = import.meta.env.VITE_ENABLE_ANALYTICS === 'true' || import.meta.env.VITE_APP_ENV === 'production';
+const PIXEL_ID = '743290068698217';
 
 // Désactiver les fonctionnalités expérimentales
 const DISABLE_FEATURES = ['attribution-reporting', 'browsing-topics'];
@@ -35,27 +34,17 @@ export const initFacebookPixel = (): Promise<boolean> => {
     
     // Si le pixel est déjà initialisé
     if (window.fbq?.loaded) {
-      if (ENABLE_ANALYTICS) {
-        console.log('Facebook Pixel: Déjà initialisé');
-        resolve(true);
-      } else {
-        console.log('Facebook Pixel: Désactivé en mode développement');
-        resolve(false);
-      }
+      console.log('Facebook Pixel: Déjà initialisé');
+      resolve(true);
       return;
     }
 
     // Si le script est déjà en cours de chargement
     if (window.fbq) {
-      if (ENABLE_ANALYTICS) {
-        window.fbq('init', PIXEL_ID);
-        window.fbq('track', 'PageView');
-        console.log('Facebook Pixel: Initialisation rapide');
-        resolve(true);
-      } else {
-        console.log('Facebook Pixel: Désactivé en mode développement (script déjà chargé)');
-        resolve(false);
-      }
+      window.fbq('init', PIXEL_ID);
+      window.fbq('track', 'PageView');
+      console.log('Facebook Pixel: Initialisation rapide');
+      resolve(true);
       return;
     }
 
@@ -100,12 +89,6 @@ export const initFacebookPixel = (): Promise<boolean> => {
     })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
     
     // Vérification périodique du chargement
-    if (!ENABLE_ANALYTICS) {
-      console.log('Facebook Pixel: Désactivé en mode développement');
-      resolve(false);
-      return;
-    }
-
     const maxAttempts = 10;
     let attempts = 0;
     
