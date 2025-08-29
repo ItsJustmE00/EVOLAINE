@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { trackAddToCart, trackViewContent } from '../lib/facebookPixel';
+import { trackAddToCart } from '../lib/facebookPixel';
 
 export interface CartItemData {
   id: string | number;
@@ -34,18 +34,15 @@ export const useTrackCart = () => {
 
   // Suivre la visualisation d'un produit
   const trackProductView = useCallback((product: Omit<CartItemData, 'quantity'>) => {
-    trackViewContent({
-      content_ids: [product.id],
+    trackAddToCart({
+      id: product.id,
       content_name: product.name,
       content_type: 'product',
       content_category: product.category || 'product',
       currency: product.currency || 'MAD',
       value: product.price,
-      contents: [{
-        id: product.id,
-        quantity: 1,
-        item_price: product.price
-      }]
+      quantity: 1,
+      item_price: product.price
     });
   }, []);
 

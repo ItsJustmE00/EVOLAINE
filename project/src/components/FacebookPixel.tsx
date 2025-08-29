@@ -1,23 +1,52 @@
 // src/components/FacebookPixel.tsx
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { initFacebookPixel, trackEvent, ensureFBQ } from '../lib/facebookPixel';
+import { ensureFBQ } from '../lib/facebookPixel';
+
+declare global {
+  interface Window {
+    fbq: any;
+    _fbq: any;
+  }
+}
 
 const FacebookPixel = () => {
   const location = useLocation();
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    // Initialisation du pixel
-    const initializePixel = async () => {
-      await initFacebookPixel();
-      setIsInitialized(true);
+    // Vérifier si le pixel est déjà initialisé
+    const checkPixelInitialized = () => {
+      if (window.fbq?.loaded) {
+        setIsInitialized(true);
+        return true;
+      }
+      return false;
     };
-    
-    initializePixel();
-    
+
+    // Essayer de vérifier immédiatement
+    if (checkPixelInitialized()) {
+      return;
+    }
+
+    // Sinon, attendre un peu et réessayer
+    const timer = setTimeout(() => {
+      if (checkPixelInitialized()) {
+        clearInterval(interval);
+      }
+    }, 500);
+
+    // Vérifier périodiquement
+    const interval = setInterval(() => {
+      if (checkPixelInitialized()) {
+        clearInterval(interval);
+      }
+    }, 1000);
+
+    // Nettoyer les intervalles lors du démontage
     return () => {
-      // Nettoyage si nécessaire
+      clearTimeout(timer);
+      clearInterval(interval);
     };
   }, []);
 
@@ -25,15 +54,17 @@ const FacebookPixel = () => {
   useEffect(() => {
     if (!isInitialized) return;
     
-    // Petit délai pour s'assurer que la page est complètement chargée
-    const timer = setTimeout(() => {
+    const trackPageView = () => {
       if (ensureFBQ()) {
-        trackEvent('PageView', {
+        window.fbq('track', 'PageView', {
           page_path: location.pathname,
           page_title: document.title
         });
       }
-    }, 100);
+    };
+
+    // Délai pour s'assurer que la page est complètement chargée
+    const timer = setTimeout(trackPageView, 100);
     
     return () => clearTimeout(timer);
   }, [location.pathname, isInitialized]);
