@@ -23,7 +23,7 @@ const CheckoutForm = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [orderId, setOrderId] = useState<string | null>(null);
   
-  // Suivi du processus de paiement
+  // Suivi de l'initiation du paiement
   useTrackCheckout(
     cartItems.length > 0
       ? {
@@ -35,12 +35,51 @@ const CheckoutForm = () => {
             quantity: item.quantity,
             item_price: parseFloat(item.price.replace(/[^0-9.,]/g, '').replace(',', '.')),
           })),
-          order_id: orderId || undefined,
+          content_name: 'Commande',
+          content_category: 'checkout',
+          num_items: cartItems.reduce((sum, item) => sum + item.quantity, 0)
         }
       : null,
     true, // Suivre l'initiation du paiement
-    !!orderId // Suivre l'achat si orderId est défini
+    false // Ne pas suivre l'achat ici, on le fera après la redirection
   );
+
+  // Effet pour suivre l'achat après la définition de l'orderId
+  useEffect(() => {
+    if (orderId && cartItems.length > 0) {
+      console.log('[CheckoutForm] Commande créée, envoi de l\'événement Purchase', { orderId, cartItems });
+      
+      // Utiliser directement trackPurchase depuis facebookPixel
+      const { trackPurchase } = require('../lib/facebookPixel');
+      
+      const purchaseData = {
+        content_ids: cartItems.map(item => item.id),
+        value: cartTotal,
+        currency: 'MAD',
+        contents: cartItems.map(item => ({
+          id: item.id,
+          quantity: item.quantity,
+          item_price: parseFloat(item.price.replace(/[^0-9.,]/g, '').replace(',', '.')),
+        })),
+        order_id: orderId,
+        content_name: 'Achat effectué',
+        content_category: 'purchase',
+        num_items: cartItems.reduce((sum, item) => sum + item.quantity, 0)
+      };
+      
+      console.log('[CheckoutForm] Données d\'achat:', purchaseData);
+      trackPurchase(purchaseData);
+      
+      // Envoyer également un événement personnalisé pour le suivi
+      const { trackEvent } = require('../lib/facebookPixel');
+      trackEvent('CheckoutComplete', {
+        order_id: orderId,
+        value: cartTotal,
+        currency: 'MAD',
+        num_items: cartItems.reduce((sum, item) => sum + item.quantity, 0)
+      });
+    }
+  }, [orderId, cartItems, cartTotal]);
   
   const [formData, setFormData] = useState<FormValues>({
     firstName: '',
@@ -105,6 +144,8 @@ const CheckoutForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('[CheckoutForm] Soumission du formulaire');
+    
     // Validation des champs
     const newErrors: Record<string, string> = {};
     let isValid = true;
@@ -127,6 +168,7 @@ const CheckoutForm = () => {
     });
     
     if (!isValid) {
+      console.log('[CheckoutForm] Échec de la validation du formulaire:', newErrors);
       setErrors(newErrors);
       return;
     }
@@ -136,7 +178,18 @@ const CheckoutForm = () => {
     try {
       // Générer un ID de commande unique
       const generatedOrderId = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-      setOrderId(generatedOrderId);
+      console.log('[CheckoutForm] ID de commande généré:', generatedOrderId);
+      
+      // Préparer les données de la commande
+      const orderData = {
+        ...formData,
+        orderId: generatedOrderId,
+        items: cartItems,
+        total: cartTotal,
+        status: 'pending',
+      };
+      
+      console.log('[CheckoutForm] Envoi de la commande:', orderData);
       
       // Envoyer la commande à l'API
       const response = await fetch(`${API_BASE}/api/orders`, {
@@ -144,34 +197,54 @@ const CheckoutForm = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          orderId: generatedOrderId,
-          items: cartItems,
-          total: cartTotal,
-          status: 'pending',
-        }),
+        body: JSON.stringify(orderData),
       });
       
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[CheckoutForm] Erreur API:', response.status, errorText);
         throw new Error('Erreur lors de la soumission de la commande');
       }
       
       const responseData = await response.json();
+      console.log('[CheckoutForm] Commande créée avec succès:', responseData);
+      
+      // Définir l'ID de commande pour déclencher le suivi
+      const finalOrderId = responseData.id || generatedOrderId;
+      console.log('[CheckoutForm] ID de commande final:', finalOrderId);
+      setOrderId(finalOrderId);
       
       // Vider le panier après une commande réussie
       clearCart();
       
-      // Rediriger vers la page de confirmation avec l'ID de commande
-      navigate('/confirmation', { 
-        state: { 
-          orderId: responseData.id || generatedOrderId,
-          orderDetails: responseData
-        } 
-      });
+      // Envoyer un événement de conversion personnalisé
+      try {
+        const { trackEvent } = require('../lib/facebookPixel');
+        trackEvent('Lead', {
+          content_category: 'purchase',
+          content_name: 'Commande validée',
+          value: cartTotal,
+          currency: 'MAD',
+          order_id: finalOrderId
+        });
+      } catch (error) {
+        console.error('[CheckoutForm] Erreur lors de l\'envoi de l\'événement Lead:', error);
+      }
+      
+      // Attendre un court instant pour s'assurer que le suivi est effectué
+      setTimeout(() => {
+        console.log('[CheckoutForm] Redirection vers la page de confirmation');
+        // Rediriger vers la page de confirmation avec l'ID de commande
+        navigate('/confirmation', { 
+          state: { 
+            orderId: finalOrderId,
+            orderDetails: responseData
+          } 
+        });
+      }, 1000); // Augmenté à 1s pour plus de fiabilité
       
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error('[CheckoutForm] Erreur lors de la soumission:', error);
       alert(error instanceof Error ? error.message : 'Une erreur est survenue');
     } finally {
       setIsSubmitting(false);

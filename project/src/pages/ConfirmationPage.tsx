@@ -15,25 +15,54 @@ const ConfirmationPage = () => {
   
   // Si aucune donnée de commande n'est disponible, rediriger vers la page d'accueil
   useEffect(() => {
+    console.log('[ConfirmationPage] Chargement de la page de confirmation', { orderId, orderDetails });
+    
     if (!orderId) {
+      console.warn('[ConfirmationPage] Aucun orderId trouvé, redirection vers la page d\'accueil');
       navigate('/');
       return;
     }
     
     // Suivre l'achat avec Facebook Pixel
     if (orderDetails) {
-      trackPurchase({
+      console.log('[ConfirmationPage] Suivi de l\'achat avec Facebook Pixel', { orderDetails });
+      
+      // Préparer les données de l'événement Purchase
+      const purchaseData = {
         content_ids: orderDetails.items?.map((item: any) => item.id) || [],
         content_type: 'product',
         value: orderDetails.total || 0,
         currency: 'MAD',
         contents: orderDetails.items?.map((item: any) => ({
           id: item.id,
-          quantity: item.quantity,
+          quantity: item.quantity || 1,
           item_price: parseFloat(item.price?.replace(/[^0-9.,]/g, '').replace(',', '.')) || 0,
         })) || [],
         order_id: orderId,
-      });
+        content_name: 'Achat effectué',
+        content_category: 'purchase',
+        num_items: orderDetails.items?.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0) || 1
+      };
+      
+      console.log('[ConfirmationPage] Données d\'achat pour Facebook Pixel:', purchaseData);
+      
+      // Envoyer l'événement Purchase
+      trackPurchase(purchaseData);
+      
+      // Envoyer également un événement personnalisé pour le suivi
+      try {
+        const { trackEvent } = require('../lib/facebookPixel');
+        trackEvent('PurchaseConfirmed', {
+          order_id: orderId,
+          value: orderDetails.total || 0,
+          currency: 'MAD',
+          num_items: purchaseData.num_items
+        });
+      } catch (error) {
+        console.error('[ConfirmationPage] Erreur lors de l\'envoi de l\'événement PurchaseConfirmed:', error);
+      }
+    } else {
+      console.warn('[ConfirmationPage] Aucun détail de commande trouvé pour le suivi');
     }
   }, [orderId, orderDetails, navigate]);
   
